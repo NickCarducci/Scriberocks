@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "Scriberocks iphone notifs small.png",
       "idiom" : "iphone",
       "scale" : "2x",
       "size" : "20x20"
@@ -24,6 +25,7 @@
       "size" : "29x29"
     },
     {
+      "filename" : "Scriberocks ipad spotlight-1.png",
       "idiom" : "iphone",
       "scale" : "2x",
       "size" : "40x40"
@@ -47,16 +49,19 @@
       "size" : "60x60"
     },
     {
+      "filename" : "Scriberocks ipad notifs smaller.png",
       "idiom" : "ipad",
       "scale" : "1x",
       "size" : "20x20"
     },
     {
+      "filename" : "Scriberocks iphone notifs small-1.png",
       "idiom" : "ipad",
       "scale" : "2x",
       "size" : "20x20"
     },
     {
+      "filename" : "Scriberocks ipad settings smaller.png",
       "idiom" : "ipad",
       "scale" : "1x",
       "size" : "29x29"
@@ -68,17 +73,19 @@
       "size" : "29x29"
     },
     {
+      "filename" : "Scriberocks iphone notifs small-2.png",
       "idiom" : "ipad",
       "scale" : "1x",
       "size" : "40x40"
     },
     {
+      "filename" : "Scriberocks ipad spotlight.png",
       "idiom" : "ipad",
       "scale" : "2x",
       "size" : "40x40"
     },
     {
-      "filename" : "Scriberocks ipad small.png",
+      "filename" : "Scriberocks ipad small (1).png",
       "idiom" : "ipad",
       "scale" : "1x",
       "size" : "76x76"
@@ -90,6 +97,7 @@
       "size" : "76x76"
     },
     {
+      "filename" : "Scriberocks ipad pro.png",
       "idiom" : "ipad",
       "scale" : "2x",
       "size" : "83.5x83.5"
