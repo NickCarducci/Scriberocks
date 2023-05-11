@@ -135,7 +135,124 @@ struct SymbolButton: View {
         
     }
 }*/
+
 //NSDate 00:00:00 UTC on 1 January 2001
+struct DownloadPage: View {
+    //@AppStorage("createdAt") var createdAt: String = "2023-05-08T15:53:01-08:00"
+    
+    //@State public var date = Date.now
+    let regularFormatter: DateFormatter = {
+        let formatter = DateFormatter() //RFC3339DateFormatter
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return formatter
+    }()
+    //@AppStorage("createdAt") var createdAt: String = "2023-05-08T15:53:01-08:00" //"\(date, formatter: regularFormatter)"
+    //let keys: Array = Array(UserDefaults.standard.dictionaryRepresentation().keys)
+    //https://stackoverflow.com/questions/27507213/how-to-print-nsuserdefaults-content-in-swift
+    
+    //https://designcode.io/swiftui-handbook-appstorage
+    //https://stackoverflow.com/questions/33484312/how-to-convert-a-string-utc-date-to-nsdate-in-swift
+    
+    //https://stackoverflow.com/questions/65376501/update-swiftui-view-when-object-in-userdefaults-changes
+    let dateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter() //DateFormatter
+        //formatter.dateStyle = .long
+        return formatter
+    }()
+    @State private var confirmDownload: Bool = false
+    
+    //@State public var saved = []
+    //@State private var index: Int = 0
+    //UserDefaults.standard.array(forKey: "Rocks")
+    let defaults = UserDefaults.standard
+    @Binding public var rocks:[String]
+    //@AppStorage("rocks") var rocks: [String] = []
+    //https://developer.apple.com/forums/thread/67555
+    //let descending = Array(rocks.sorted().reversed())
+    
+    
+    @State private var exporting = false
+    func stringArrayToData(stringArray: [String]) -> Data? {
+      return try? JSONSerialization.data(withJSONObject: stringArray, options: [])
+    }
+    var body: some View {
+                HStack{
+                    Text(".csv")
+                    Image(systemName: "arrow.down.to.line")
+                        .imageScale(.small)
+                        .foregroundColor(.gray)
+                        .padding(10)
+                        .onTapGesture {
+                            withAnimation(.default.speed(0.1)) {
+                                confirmDownload = true
+                            }
+                        }
+                        .confirmationDialog("Are you sure?",
+                          //https://useyourloaf.com/blog/swiftui-confirmation-dialogs/
+                          isPresented: $confirmDownload) {
+                            Button("Download ", role: .destructive) {
+                                
+                                rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
+                                //print("just checking")
+                                exporting = true
+                                let file = rocks.joined(separator: "\n")
+                                let fileName = "export_scriberocks.csv"
+                                let path = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+                                do {
+                                    try file.write(to: path!, atomically: true, encoding: String.Encoding.utf8)
+                                } catch {
+                                    print("Failed to create file")
+                                    print("\(error)")
+                                }
+                                /*
+                                let path = try FileManager.default.url(for: .documentDirectory,
+                                                                       in: .allDomainsMask,
+                                                                       appropriateFor: nil,
+                                                                       create: false)
+
+                                let fileURL = path.appendingPathComponent("TrailTime.csv")
+                                try csvString.write(to: fileURL, atomically: true , encoding: .utf8)*/
+                                //https://medium.com/@CoreyWDavis/reading-writing-and-deleting-files-in-swift-197e886416b0
+                                let directoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                                let filePath = NSHomeDirectory() + "/download"// /test.txt"
+                                let fileURL = URL(fileURLWithPath: filePath, relativeTo: directoryURL).appendingPathExtension("csv")
+                                //FileManager.default.createFile(atPath: filePath, contents: stringArrayToData(rocks), attributes: nil)
+                                // Create data to be saved
+                                let myString = "Saving data with FileManager is easy!"
+                                guard let data = myString.data(using: .utf8) else {
+                                    print("Unable to convert string to data")
+                                    return
+                                }
+                                // Save the data
+                                do {
+                                 try data.write(to: fileURL)
+                                 print("File saved: \(filePath)")
+                                } catch {
+                                 // Catch any errors
+                                 print(error.localizedDescription)
+                                }
+
+                           }
+                            /*.fileExporter(
+                                isPresented: $exporting,
+                                document: rocks,
+                                contentType: .plainText
+                            ) { result in
+                                switch result {
+                                case .success(let file):
+                                    print(file)
+                                case .failure(let error):
+                                    print(error)
+                                }
+                            }*/
+                         }
+                }
+            
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
 struct SavedPage: View {
     //@AppStorage("createdAt") var createdAt: String = "2023-05-08T15:53:01-08:00"
     
@@ -356,11 +473,14 @@ struct ContentView: View {
             .padding(9.0)
             .border(.secondary)
                 HStack{
+                    DownloadPage(rocks: $rocks)
+                        .offset(x: show == "profile" ? 5 : UIScreen.screenWidth)
+                        .frame(width: show == "profile" ? .infinity : 0)
                     SubmitPage(show: $show, rocks: $rocks)
-                        .offset(x: show == "home" ? 5 : -UIScreen.screenWidth)
+                        .offset(x: show == "home" ? 0 :  show == "profile" ? UIScreen.screenWidth : -UIScreen.screenWidth)
                         .frame(width: show == "home" ? .infinity : 0)
                     SavedPage(rocks: $rocks, show: $show)
-                        .offset(x: show == "saved" ? -5 : UIScreen.screenWidth)
+                        .offset(x: show == "saved" ? -10 : UIScreen.screenWidth)
                         .frame(width: show == "saved" ? .infinity : 0)
                 }
             }
