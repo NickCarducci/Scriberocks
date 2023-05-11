@@ -25,6 +25,7 @@ struct SymbolButton: View {
     @AppStorage("rock")
     private var rocksData: Data = Data()
     
+    @Binding public var show: String
     @Binding public var typing: Bool
     @Binding public var message: String
     @State private var index: Int = 0
@@ -48,19 +49,22 @@ struct SymbolButton: View {
                     Image(systemName: "fossil.shell")
                         .imageScale(.large)
                         .foregroundColor(.accentColor)
-                        .opacity(message == "" ? 1 : 0)
                         //.transition(AnyTransition.move(edge: .bottom))
                     Image(systemName: "pencil.and.outline")
                         .imageScale(.small)
                         .foregroundColor(.accentColor)
-                        .opacity(message == "" ? 1 : 0)
                     Text("Scriberocks")
-                        .opacity(message == "" ? 1 : 0)
+                }
+                .opacity(message == "" ? 1 : 0)
+                .onTapGesture {
+                        withAnimation(.default.speed(0.1)) {
+                            flag.wrappedValue.toggle()//just to change state
+                        }
                 }
                 HStack {
                     Text("Save +")
                         .onTapGesture {
-                            guard message.isEmpty == false else { return }
+                            guard message.isEmpty == false else { return flag.wrappedValue.toggle()}
                             print(message)
                             //confirmSave = true
                             //if(message == "") {
@@ -96,6 +100,8 @@ struct SymbolButton: View {
                                     return
                                 }//https://www.youtube.com/watch?v=tdyT_v4lwos
                                 self.rocksData = rockData*/
+                                rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
+                                show = "saved"
                            }
                         }
                     Image(systemName: !typing ? "balloon" : "balloon.fill")
@@ -208,6 +214,7 @@ struct SubmitPage: View {
     @State private var socialstop = false
     @State private var confirmSave: Bool = false
     
+    @Binding public var show:String
     @Binding public var rocks:[String]
     let defaults = UserDefaults.standard
     var body: some View {
@@ -218,6 +225,7 @@ struct SubmitPage: View {
             SymbolButton(
                 flag: $flag,
                 socialstop: $socialstop,
+                show: $show,
                 typing: $typing,
                 message: $message,
                 confirmSave: $confirmSave,
@@ -236,7 +244,10 @@ struct SubmitPage: View {
                     Button(socialstop ? "Share rock" : "Save rock", role: .destructive) {
                     
                         //defaults.set([message].append(contentsOf: rocks), forKey: "ROCKS")
-                        defaults.set(rocks.append(message), forKey: "ROCKS")
+                        defaults.set(rocks.append(message), forKey: "ROCKS")//set
+                        
+                        rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
+                        show = "saved"
                    }
                  }
                 .textInputAutocapitalization(.never)
@@ -318,11 +329,13 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: 46)
             .padding(9.0)
             .border(.secondary)
-    
-                if(show == "home") {
-                    SubmitPage(rocks: $rocks)
-                } else if(show == "saved") {
+                HStack{
+                    SubmitPage(show: $show, rocks: $rocks)
+                        .offset(x: show == "home" ? 5 : -UIScreen.screenWidth)
+                        .frame(width: show == "home" ? .infinity : 0)
                     SavedPage(rocks: $rocks)
+                        .offset(x: show == "saved" ? -5 : UIScreen.screenWidth)
+                        .frame(width: show == "saved" ? .infinity : 0)
                 }
             }
         }
