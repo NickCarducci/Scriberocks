@@ -154,8 +154,8 @@ struct SavedPage: View {
         //formatter.dateStyle = .long
         return formatter
     }()
-    @State public var saved = []
-    @State private var index: Int = 0
+    //@State public var saved = []
+    //@State private var index: Int = 0
     //UserDefaults.standard.array(forKey: "Rocks")
     let defaults = UserDefaults.standard
     @Binding public var rocks:[String]
