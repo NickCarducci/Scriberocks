@@ -6,16 +6,19 @@
       "size" : "20x20"
     },
     {
+      "filename" : "Scriberocks notifs (1).png",
       "idiom" : "iphone",
       "scale" : "3x",
       "size" : "20x20"
     },
     {
+      "filename" : "Scriberocks settings smaller.png",
       "idiom" : "iphone",
       "scale" : "2x",
       "size" : "29x29"
     },
     {
+      "filename" : "Scriberocks settings.png",
       "idiom" : "iphone",
       "scale" : "3x",
       "size" : "29x29"
@@ -26,16 +29,19 @@
       "size" : "40x40"
     },
     {
+      "filename" : "Scriberocks iphone small-1.png",
       "idiom" : "iphone",
       "scale" : "3x",
       "size" : "40x40"
     },
     {
+      "filename" : "Scriberocks iphone small.png",
       "idiom" : "iphone",
       "scale" : "2x",
       "size" : "60x60"
     },
     {
+      "filename" : "Scriberocks Small.png",
       "idiom" : "iphone",
       "scale" : "3x",
       "size" : "60x60"
@@ -56,6 +62,7 @@
       "size" : "29x29"
     },
     {
+      "filename" : "Scriberocks settings smaller-1.png",
       "idiom" : "ipad",
       "scale" : "2x",
       "size" : "29x29"
@@ -76,6 +83,7 @@
       "size" : "76x76"
     },
     {
+      "filename" : "Scriberocks ipad.png",
       "idiom" : "ipad",
       "scale" : "2x",
       "size" : "76x76"
