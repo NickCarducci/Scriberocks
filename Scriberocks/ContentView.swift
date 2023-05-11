@@ -160,11 +160,14 @@ struct SavedPage: View {
         //formatter.dateStyle = .long
         return formatter
     }()
+    @State private var confirmDelete: Bool = false
+    
     //@State public var saved = []
     //@State private var index: Int = 0
     //UserDefaults.standard.array(forKey: "Rocks")
     let defaults = UserDefaults.standard
     @Binding public var rocks:[String]
+    @Binding public var show:String
     //@AppStorage("rocks") var rocks: [String] = []
     //https://developer.apple.com/forums/thread/67555
     //let descending = Array(rocks.sorted().reversed())
@@ -173,8 +176,31 @@ struct SavedPage: View {
         VStack(alignment: .leading) {
             Text("Saved")
                 .padding(10)
-            List (Array(rocks.sorted().reversed()), id: \.self){ message in
-                Text(message)
+            //Array(rocks.sorted().reversed()
+            List (rocks, id: \.self){ message in
+                HStack{
+                    Text(message)
+                    Image(systemName: "xmark.circle")
+                        .imageScale(.small)
+                        .foregroundColor(.gray)
+                        .padding(10)
+                        .onTapGesture {
+                            withAnimation(.default.speed(0.1)) {
+                                confirmDelete = true
+                            }
+                        }
+                        .confirmationDialog("Are you sure?",
+                          //https://useyourloaf.com/blog/swiftui-confirmation-dialogs/
+                          isPresented: $confirmDelete) {
+                            Button("Delete \(message)", role: .destructive) {
+                                
+                                defaults.set(rocks.filter { $0 != message }, forKey: "ROCKS")//set
+                                
+                                rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
+                                show = "saved"
+                           }
+                         }
+                }
             }
             
             Button("Load More Rocks"){
@@ -333,7 +359,7 @@ struct ContentView: View {
                     SubmitPage(show: $show, rocks: $rocks)
                         .offset(x: show == "home" ? 5 : -UIScreen.screenWidth)
                         .frame(width: show == "home" ? .infinity : 0)
-                    SavedPage(rocks: $rocks)
+                    SavedPage(rocks: $rocks, show: $show)
                         .offset(x: show == "saved" ? -5 : UIScreen.screenWidth)
                         .frame(width: show == "saved" ? .infinity : 0)
                 }
