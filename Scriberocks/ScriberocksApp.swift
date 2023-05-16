@@ -11,7 +11,7 @@ import SwiftUI
 //import FirebaseAuth
 
 //let db = Firestore.firestore()
-@main
+@main 
 struct ScriberocksApp: App {
     //@UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     init() {
@@ -30,8 +30,7 @@ struct YourView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             ContentView()
-                .previewInterfaceOrientation(.landscapeLeft)
-            ContentView()
+                .previewInterfaceOrientation(.portrait)
         }
     }
 }

@@ -385,12 +385,12 @@ struct SubmitPage: View {
                   //https://useyourloaf.com/blog/swiftui-confirmation-dialogs/
                   isPresented: $confirmSave) {
                     Button(socialstop ? "Share rock" : "Save rock", role: .destructive) {
-                    
+                        
+                        message = ""
+                        show = "saved"
                         //defaults.set([message].append(contentsOf: rocks), forKey: "ROCKS")
                         defaults.set(rocks.append(message), forKey: "ROCKS")//set
-                        
-                        rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
-                        show = "saved"
+                        //rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
                    }
                  }
                 .textInputAutocapitalization(.never)
@@ -449,7 +449,9 @@ struct ContentView: View {
                     .border(.black, width: show == "home" ? 1: 0)
                 Text("Saved")
                     .onTapGesture {
-                        withAnimation(.default.speed(0.3)) {
+                        withAnimation(.default.speed(0.3)) {UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                                                                            to: nil, from: nil, for: nil)
+
                             show = "saved"
                             
                             /*ForEach(1...5) { i in
@@ -463,6 +465,9 @@ struct ContentView: View {
                 Text("Profile")
                     .onTapGesture {
                         withAnimation(.default.speed(0.3)) {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                                            to: nil, from: nil, for: nil)
+
                             show = "profile"
                         }
                     }
