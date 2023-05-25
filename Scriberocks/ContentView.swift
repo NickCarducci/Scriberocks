@@ -253,6 +253,39 @@ struct DownloadPage: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
+struct SubView: View {
+    @State private var confirmDelete: Bool = false
+    @Binding public var message:String
+    @Binding public var rocks:[String]
+    @Binding public var show:String
+    let defaults = UserDefaults.standard
+    var body: some View {
+        HStack{
+            Text("\(message)")
+                .padding(10)
+            Image(systemName: "xmark.circle")
+                .imageScale(.small)
+                .foregroundColor(.gray)
+                .onTapGesture {
+                    withAnimation(.default.speed(0.1)) {
+                        confirmDelete = true
+                    }
+                }
+                .confirmationDialog("Are you sure?",
+                  //https://useyourloaf.com/blog/swiftui-confirmation-dialogs/
+                  isPresented: $confirmDelete) {
+                    Button("Delete \(message)", role: .destructive) {
+                        
+                        defaults.set(rocks.filter { $0 != message }, forKey: "ROCKS")//set
+                        
+                        rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
+                        show = "saved"
+                }
+            }
+        }
+    }
+}
 struct SavedPage: View {
     //@AppStorage("createdAt") var createdAt: String = "2023-05-08T15:53:01-08:00"
     
@@ -277,12 +310,11 @@ struct SavedPage: View {
         //formatter.dateStyle = .long
         return formatter
     }()
-    @State private var confirmDelete: Bool = false
     
+    let defaults = UserDefaults.standard
     //@State public var saved = []
     //@State private var index: Int = 0
     //UserDefaults.standard.array(forKey: "Rocks")
-    let defaults = UserDefaults.standard
     @Binding public var rocks:[String]
     @Binding public var show:String
     //@AppStorage("rocks") var rocks: [String] = []
@@ -294,30 +326,8 @@ struct SavedPage: View {
             Text("Saved")
                 .padding(10)
             //Array(rocks.sorted().reversed()
-            List (rocks, id: \.self){ message in
-                HStack{
-                    Text(message)
-                    Image(systemName: "xmark.circle")
-                        .imageScale(.small)
-                        .foregroundColor(.gray)
-                        .padding(10)
-                        .onTapGesture {
-                            withAnimation(.default.speed(0.1)) {
-                                confirmDelete = true
-                            }
-                        }
-                        .confirmationDialog("Are you sure?",
-                          //https://useyourloaf.com/blog/swiftui-confirmation-dialogs/
-                          isPresented: $confirmDelete) {
-                            Button("Delete \(message)", role: .destructive) {
-                                
-                                defaults.set(rocks.filter { $0 != message }, forKey: "ROCKS")//set
-                                
-                                rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
-                                show = "saved"
-                           }
-                         }
-                }
+            List ($rocks, id: \.self){ message in
+                SubView(message: message,rocks:$rocks,show:$show)
             }
             
             Button("Load More Rocks"){
