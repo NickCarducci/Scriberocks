@@ -66,43 +66,13 @@ struct SymbolButton: View {
                         .onTapGesture {
                             guard message.isEmpty == false else { return flag.wrappedValue.toggle()}
                             print(message)
-                            //confirmSave = true
-                            //if(message == "") {
                                 
                             flag.wrappedValue.toggle()//just to change state
-                                confirmSave = true
+                            confirmSave = true
                             
                             //FirebaseApp.configure()
                             //https://designcode.io/swiftui-advanced-handbook-firebase-auth
                             
-                            /*db.collection("cities").document("LA").setData([
-                             "message": rock,
-                             "authorId": "CA"
-                             ]) { err in
-                             if let err = err {
-                             print("Error writing document: \(err)")
-                             } else {
-                             print("Document successfully written!")
-                             }
-                             }*/
-                        }
-                        .confirmationDialog("Are you sure?",
-                          //https://useyourloaf.com/blog/swiftui-confirmation-dialogs/
-                          isPresented: $confirmSave) {
-                            Button(socialstop ? "Share rock" : "Save rock", role: .destructive) {
-                                solution.append(message)
-                                solution.append(contentsOf: rocks)
-                                defaults.set(solution, forKey: "ROCKS")
-                                
-                                /*let rock = Rock(getRock: message)
-                                //let rock = Rock(array: roc.getRock.append("\(roc.viewerIndex):\(message)"))
-                                guard let rockData = try? JSONEncoder().encode(rock) else {
-                                    return
-                                }//https://www.youtube.com/watch?v=tdyT_v4lwos
-                                self.rocksData = rockData*/
-                                rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
-                                show = "saved"
-                           }
                         }
                     Image(systemName: !typing ? "balloon" : "balloon.fill")
                         .imageScale(.medium)
@@ -326,11 +296,20 @@ struct SavedPage: View {
             Text("Saved")
                 .padding(10)
             //Array(rocks.sorted().reversed()
-            List ($rocks, id: \.self){ message in
-                SubView(message: message,rocks:$rocks,show:$show)
+            GeometryReader { geometry in
+                ScrollView {
+                    List {
+                        ForEach ($rocks, id: \.self){ message in
+                            SubView(message: message,rocks:$rocks,show:$show)
+                        }
+                    }
+                    .frame(width: geometry.size.width,
+                           height: geometry.size.height)
+                }
+                .frame(height: .infinity)
             }
             
-            Button("Load More Rocks"){
+            /*Button("Load More Rocks"){
                 //rocks = defaults.object(forKey: "Rocks") as? [String] ?? [String]()
                 rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()
                 /*let defaults = UserDefaults.standard
@@ -339,10 +318,11 @@ struct SavedPage: View {
                 //guard let rock = try?
                         //JSONDecoder().decode(Rock.self, from: rocksData) else {return}
                 //https://www.hackingwithswift.com/quick-start/beginners/how-to-compute-property-values-dynamically
-            }
+            }*/
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+    
 }
 struct SubmitPage: View {
     
@@ -370,6 +350,8 @@ struct SubmitPage: View {
     @Binding public var show:String
     @Binding public var rocks:[String]
     let defaults = UserDefaults.standard
+    //let rocks = defaults.array(forKey: "ROCKS") as! [String]
+    @State private var rocksss = [String]()
     var body: some View {
         VStack(alignment: .leading) {
             Text(message)
@@ -388,21 +370,7 @@ struct SubmitPage: View {
                 .focused($flag)
                 .onSubmit {
                     guard message.isEmpty == false else { return }
-                    //print(message)
-                    confirmSave = true
                 }
-                .confirmationDialog("Are you sure?",
-                  //https://useyourloaf.com/blog/swiftui-confirmation-dialogs/
-                  isPresented: $confirmSave) {
-                    Button(socialstop ? "Share rock" : "Save rock", role: .destructive) {
-                        
-                        message = ""
-                        show = "saved"
-                        //defaults.set([message].append(contentsOf: rocks), forKey: "ROCKS")
-                        defaults.set(rocks.append(message), forKey: "ROCKS")//set
-                        //rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
-                   }
-                 }
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
                 .lineLimit(3)
@@ -418,6 +386,22 @@ struct SubmitPage: View {
                 .padding(6.0)
                 .border(.secondary)
                 .frame(width: .infinity, height: 200)
+                .confirmationDialog("Are you sure?",
+                  //https://useyourloaf.com/blog/swiftui-confirmation-dialogs/
+                  isPresented: $confirmSave) {
+                    Button(socialstop ? "Share rock" : "Save rock", role: .destructive) {
+                        
+                        //rocksss = rocks.filter { $0 != message }
+                        
+                        rocks.append(message)
+                        let _ = print(rocks)
+                        defaults.set(rocks, forKey: "ROCKS")//set
+                        rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()//get
+                        
+                        show = "saved"
+                        confirmSave = false
+                   }
+                 }
             
             HStack {
                 Toggle("Social", isOn: $socialstop)
@@ -436,14 +420,15 @@ struct ContentView: View {
     //@State public var date = Date.now
     //var i = 0
     let defaults = UserDefaults.standard
-    @State private var rocks: [String] = []
+    //@State private var rocks: [String] = []
+    @State private var rocks = UserDefaults.standard.array(forKey: "ROCKS") as! [String]
     var body: some View {
         VStack(alignment: .leading) {
             if(welcomed == "false"){
                Text("Open")
                     .onTapGesture {
                         withAnimation(.default.speed(0.3)) {
-                            rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()
+                            //rocks = defaults.array(forKey: "ROCKS") as? [String] ?? [String]()
                             welcomed = "true"
                         }
                         
