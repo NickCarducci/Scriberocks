@@ -9,6 +9,7 @@
 import SwiftUI
 import Foundation
 import Combine
+import Firebase
 extension UIScreen{
    static let screenWidth = UIScreen.main.bounds.size.width
    static let screenHeight = UIScreen.main.bounds.size.height
@@ -20,7 +21,6 @@ struct SymbolButton: View {
     //@Binding public var flag: Bool
     //@Binding public var flag: FocusState<Bool>//.Binding
     //https://developer.apple.com/forums/thread/682448
-    @Binding public var socialstop: Bool
     
     @AppStorage("rock")
     private var rocksData: Data = Data()
@@ -344,9 +344,9 @@ struct SubmitPage: View {
     
     //var flagg: flag { get nonmutating set }
     //@State private var social = true
-    @State private var socialstop = false
     @State private var confirmSave: Bool = false
     
+    @Binding public var socialstop:Bool
     @Binding public var show:String
     @Binding public var rocks:[String]
     let defaults = UserDefaults.standard
@@ -359,7 +359,6 @@ struct SubmitPage: View {
                 .padding(10)
             SymbolButton(
                 flag: $flag,
-                socialstop: $socialstop,
                 show: $show,
                 typing: $typing,
                 message: $message,
@@ -400,6 +399,19 @@ struct SubmitPage: View {
                         
                         show = "saved"
                         confirmSave = false
+                        if socialstop == true {
+                            var ref: DocumentReference? = nil
+                            let db = Firestore.firestore()
+                            ref = db.collection("posts").addDocument(data: [
+                                "message": message
+                            ]) { err in
+                                if let err = err {
+                                    print("Error adding document: \(err)")
+                                } else {
+                                    print("Document added with ID: \(ref!.documentID)")
+                                }
+                            }
+                        }
                    }
                  }
             
@@ -413,15 +425,122 @@ struct SubmitPage: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+struct FirestoreSubView: View {
+    @State private var confirmDelete: Bool = false
+    @Binding public var rocks:[Post]
+    @Binding public var show:String
+    @Binding public var message:String
+    @Binding public var documentId:String
+    let defaults = UserDefaults.standard
+    var body: some View {
+        HStack{
+            Text("\(message)")
+                .padding(10)
+            Image(systemName: "xmark.circle")
+                .imageScale(.small)
+                .foregroundColor(.gray)
+                .onTapGesture {
+                    withAnimation(.default.speed(0.1)) {
+                        confirmDelete = true
+                    }
+                }
+                .confirmationDialog("Are you sure?",
+                  //https://useyourloaf.com/blog/swiftui-confirmation-dialogs/
+                  isPresented: $confirmDelete) {
+                    Button("Delete \(message)", role: .destructive) {
+                        
+                        let db = Firestore.firestore()
+                        db.collection("posts").document(documentId).delete() { err in
+                            if let err = err {
+                                print("Error removing document: \(err)")
+                            } else {
+                                print("Document successfully removed!")
+                            }
+                        }
+                        show = "saved"
+                }
+            }
+        }
+    }
+}
+struct Post {
+    var id: String
+    var message: String
+}
+extension Post: Decodable {
+    enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case message = "message"
+    }
+    init(from decoder: Decoder) throws {
+        let podcastContainer = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try podcastContainer.decode(String.self, forKey: .id)
+        self.message = try podcastContainer.decode(String.self, forKey: .message)
+    }
+}
+
+struct SocialPage: View {
+    
+    @Binding public var show:String
+    //@State private var rocks: [Post] = []
+    @State private var rocks = [Post]()
+    var body: some View {
+        VStack(alignment: .leading) {
+            GeometryReader { geometry in
+                ScrollView {
+                    List {
+                        ForEach ($rocks.indices, id: \.self){ index in
+                            FirestoreSubView(rocks:$rocks,show:$show,message:$rocks[index].message,documentId: $rocks[index].id)
+                        }
+                    }
+                    .frame(width: geometry.size.width,
+                           height: geometry.size.height)
+                }
+                .frame(height: .infinity)
+            Text("Turn Rocks")
+                .onTapGesture {
+                    withAnimation(.default.speed(0.3)) {
+                        
+                        rocks = []
+                        let db = Firestore.firestore()
+                        db.collection("posts").getDocuments() { (querySnapshot, error) in
+                                        if let error = error {
+                                                print("Error getting documents: \(error)")
+                                        } else {
+                                                if querySnapshot!.documents.isEmpty {
+                                                    return print("is empty")
+                                                }
+                                            
+                                                for document in querySnapshot!.documents {
+                                                        //print("\(document.documentID): \(document.data())")
+                                                    let post = Post(id: document.documentID,
+                                                                    message: document["message"] as? String ?? "")
+                                                    //print(post)
+                                                    
+                                                    rocks.append(post)
+                                                    
+                                                }
+                                        }
+                                }
+                    }
+                }
+                .foregroundColor(.black)
+                .padding(10)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+}
 
 struct ContentView: View {
+    @State private var socialstop = false
     @State public var welcomed: String = "false"
     @State public var show: String = "saved"
     //@State public var date = Date.now
     //var i = 0
     let defaults = UserDefaults.standard
     //@State private var rocks: [String] = []
-    @State private var rocks = UserDefaults.standard.array(forKey: "ROCKS") as! [String]
+    @State private var rocks = UserDefaults.standard.array(forKey: "ROCKS") as? [String] ?? []
     var body: some View {
         VStack(alignment: .leading) {
             if(welcomed == "false"){
@@ -434,6 +553,14 @@ struct ContentView: View {
                         
                     }
             } else { HStack(alignment: .top, spacing: 20) {
+                Text("Social")
+                    .onTapGesture {
+                        withAnimation(.default.speed(0.3)) {
+                            show = "social"
+                        }
+                    }
+                    .padding(10)
+                    .border(.black, width: show == "social" ? 1: 0)
                 Text("Home")
                     .onTapGesture {
                         withAnimation(.default.speed(0.3)) {
@@ -444,9 +571,7 @@ struct ContentView: View {
                     .border(.black, width: show == "home" ? 1: 0)
                 Text("Saved")
                     .onTapGesture {
-                        withAnimation(.default.speed(0.3)) {UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
-                                                                                            to: nil, from: nil, for: nil)
-
+                        withAnimation(.default.speed(0.3)) {
                             show = "saved"
                             
                             /*ForEach(1...5) { i in
@@ -460,8 +585,7 @@ struct ContentView: View {
                 Text("Profile")
                     .onTapGesture {
                         withAnimation(.default.speed(0.3)) {
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
-                                                            to: nil, from: nil, for: nil)
+                            //UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),to: nil, from: nil, for: nil)
 
                             show = "profile"
                         }
@@ -476,9 +600,12 @@ struct ContentView: View {
                     DownloadPage(rocks: $rocks)
                         .offset(x: show == "profile" ? 5 : UIScreen.screenWidth)
                         .frame(width: show == "profile" ? .infinity : 0)
-                    SubmitPage(show: $show, rocks: $rocks)
-                        .offset(x: show == "home" ? 0 :  show == "profile" ? UIScreen.screenWidth : -UIScreen.screenWidth)
+                    SubmitPage(socialstop:$socialstop,show: $show, rocks: $rocks)
+                        .offset(x: show == "home" ? 0 : -UIScreen.screenWidth)
                         .frame(width: show == "home" ? .infinity : 0)
+                    SocialPage(show: $show)
+                        .offset(x: show == "social" ? 0 : -UIScreen.screenWidth)
+                        .frame(width: show == "social" ? .infinity : 0)
                     SavedPage(rocks: $rocks, show: $show)
                         .offset(x: show == "saved" ? -10 : UIScreen.screenWidth)
                         .frame(width: show == "saved" ? .infinity : 0)

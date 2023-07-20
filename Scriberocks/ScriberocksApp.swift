@@ -6,16 +6,21 @@
 //
 
 import SwiftUI
+import Firebase
 //import FirebaseCore
 //import FirebaseFirestore
 //import FirebaseAuth
 
 //let db = Firestore.firestore()
+
+class FirestoreManager: ObservableObject {
+
+}
 @main 
 struct ScriberocksApp: App {
-    //@UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject var firestoreManager = FirestoreManager()
     init() {
-        //FirebaseApp.configure()
+        FirebaseApp.configure()
     }
     var body: some Scene {
         WindowGroup {

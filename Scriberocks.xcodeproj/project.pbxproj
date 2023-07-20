@@ -11,6 +11,9 @@
 		A33A02462A0CFABD0039C134 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A02452A0CFABD0039C134 /* ContentView.swift */; };
 		A33A02482A0CFABE0039C134 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A33A02472A0CFABE0039C134 /* Assets.xcassets */; };
 		A33A024B2A0CFABE0039C134 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A33A024A2A0CFABE0039C134 /* Preview Assets.xcassets */; };
+		A37810EC2A69854A002EB3C3 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A37810EB2A69854A002EB3C3 /* GoogleService-Info.plist */; };
+		A37810EF2A69858D002EB3C3 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = A37810EE2A69858D002EB3C3 /* FirebaseFirestore */; };
+		A3A284312A55AFE500A8B6C3 /* netrc in Resources */ = {isa = PBXBuildFile; fileRef = A3A284302A55AFE500A8B6C3 /* netrc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +22,8 @@
 		A33A02452A0CFABD0039C134 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A33A02472A0CFABE0039C134 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A33A024A2A0CFABE0039C134 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		A37810EB2A69854A002EB3C3 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		A3A284302A55AFE500A8B6C3 /* netrc */ = {isa = PBXFileReference; lastKnownFileType = text; path = netrc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -26,6 +31,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A37810EF2A69858D002EB3C3 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -35,6 +41,7 @@
 		A33A02372A0CFABC0039C134 = {
 			isa = PBXGroup;
 			children = (
+				A3A284302A55AFE500A8B6C3 /* netrc */,
 				A33A02422A0CFABC0039C134 /* Scriberocks */,
 				A33A02412A0CFABC0039C134 /* Products */,
 			);
@@ -51,6 +58,7 @@
 		A33A02422A0CFABC0039C134 /* Scriberocks */ = {
 			isa = PBXGroup;
 			children = (
+				A37810EB2A69854A002EB3C3 /* GoogleService-Info.plist */,
 				A33A02432A0CFABC0039C134 /* ScriberocksApp.swift */,
 				A33A02452A0CFABD0039C134 /* ContentView.swift */,
 				A33A02472A0CFABE0039C134 /* Assets.xcassets */,
@@ -83,6 +91,9 @@
 			dependencies = (
 			);
 			name = Scriberocks;
+			packageProductDependencies = (
+				A37810EE2A69858D002EB3C3 /* FirebaseFirestore */,
+			);
 			productName = Scriberocks;
 			productReference = A33A02402A0CFABC0039C134 /* Scriberocks.app */;
 			productType = "com.apple.product-type.application";
@@ -111,6 +122,9 @@
 				Base,
 			);
 			mainGroup = A33A02372A0CFABC0039C134;
+			packageReferences = (
+				A37810ED2A69858D002EB3C3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = A33A02412A0CFABC0039C134 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -125,6 +139,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A3A284312A55AFE500A8B6C3 /* netrc in Resources */,
+				A37810EC2A69854A002EB3C3 /* GoogleService-Info.plist in Resources */,
 				A33A024B2A0CFABE0039C134 /* Preview Assets.xcassets in Resources */,
 				A33A02482A0CFABE0039C134 /* Assets.xcassets in Resources */,
 			);
@@ -265,7 +281,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_ASSET_PATHS = "\"Scriberocks/Preview Content\"";
 				DEVELOPMENT_TEAM = 7279TDDFK4;
 				ENABLE_PREVIEWS = YES;
@@ -279,7 +295,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3;
+				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = sayists.Scriberocks;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -294,7 +310,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_ASSET_PATHS = "\"Scriberocks/Preview Content\"";
 				DEVELOPMENT_TEAM = 7279TDDFK4;
 				ENABLE_PREVIEWS = YES;
@@ -308,7 +324,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3;
+				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = sayists.Scriberocks;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -339,6 +355,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A37810ED2A69858D002EB3C3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A37810EE2A69858D002EB3C3 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A37810ED2A69858D002EB3C3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A33A02382A0CFABC0039C134 /* Project object */;
 }
