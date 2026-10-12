@@ -3,28 +3,41 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 55;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A33A02442A0CFABC0039C134 /* ScriberocksApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A02432A0CFABC0039C134 /* ScriberocksApp.swift */; };
-		A33A02462A0CFABD0039C134 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33A02452A0CFABD0039C134 /* ContentView.swift */; };
-		A33A02482A0CFABE0039C134 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A33A02472A0CFABE0039C134 /* Assets.xcassets */; };
-		A33A024B2A0CFABE0039C134 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A33A024A2A0CFABE0039C134 /* Preview Assets.xcassets */; };
 		A3762E4E2F2DC4BA00798A70 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = A3762E4D2F2DC4BA00798A70 /* FirebaseFirestore */; };
-		A37810EC2A69854A002EB3C3 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A37810EB2A69854A002EB3C3 /* GoogleService-Info.plist */; };
-		A3A284312A55AFE500A8B6C3 /* netrc in Resources */ = {isa = PBXBuildFile; fileRef = A3A284302A55AFE500A8B6C3 /* netrc */; };
+		A3B100022F9A000100798A70 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A3B100012F9A000100798A70 /* FirebaseAuth */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A3B100132F9A000100798A70 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A33A02382A0CFABC0039C134 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A33A023F2A0CFABC0039C134;
+			remoteInfo = Scriberocks;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A33A02402A0CFABC0039C134 /* Scriberocks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Scriberocks.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A33A02432A0CFABC0039C134 /* ScriberocksApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriberocksApp.swift; sourceTree = "<group>"; };
-		A33A02452A0CFABD0039C134 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A33A02472A0CFABE0039C134 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A33A024A2A0CFABE0039C134 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		A37810EB2A69854A002EB3C3 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		A3A284302A55AFE500A8B6C3 /* netrc */ = {isa = PBXFileReference; lastKnownFileType = text; path = netrc; sourceTree = "<group>"; };
+		A3B100102F9A000100798A70 /* ScriberocksTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScriberocksTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A3B100032F9A000100798A70 /* Scriberocks */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Scriberocks;
+			sourceTree = "<group>";
+		};
+		A3B100112F9A000100798A70 /* ScriberocksTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ScriberocksTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A33A023D2A0CFABC0039C134 /* Frameworks */ = {
@@ -32,6 +45,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3762E4E2F2DC4BA00798A70 /* FirebaseFirestore in Frameworks */,
+				A3B100022F9A000100798A70 /* FirebaseAuth in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A3B1000A2F9A000100798A70 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -41,8 +62,8 @@
 		A33A02372A0CFABC0039C134 = {
 			isa = PBXGroup;
 			children = (
-				A3A284302A55AFE500A8B6C3 /* netrc */,
-				A33A02422A0CFABC0039C134 /* Scriberocks */,
+				A3B100032F9A000100798A70 /* Scriberocks */,
+				A3B100112F9A000100798A70 /* ScriberocksTests */,
 				A33A02412A0CFABC0039C134 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -51,28 +72,9 @@
 			isa = PBXGroup;
 			children = (
 				A33A02402A0CFABC0039C134 /* Scriberocks.app */,
+				A3B100102F9A000100798A70 /* ScriberocksTests.xctest */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		A33A02422A0CFABC0039C134 /* Scriberocks */ = {
-			isa = PBXGroup;
-			children = (
-				A37810EB2A69854A002EB3C3 /* GoogleService-Info.plist */,
-				A33A02432A0CFABC0039C134 /* ScriberocksApp.swift */,
-				A33A02452A0CFABD0039C134 /* ContentView.swift */,
-				A33A02472A0CFABE0039C134 /* Assets.xcassets */,
-				A33A02492A0CFABE0039C134 /* Preview Content */,
-			);
-			path = Scriberocks;
-			sourceTree = "<group>";
-		};
-		A33A02492A0CFABE0039C134 /* Preview Content */ = {
-			isa = PBXGroup;
-			children = (
-				A33A024A2A0CFABE0039C134 /* Preview Assets.xcassets */,
-			);
-			path = "Preview Content";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -90,13 +92,40 @@
 			);
 			dependencies = (
 			);
+			fileSystemSynchronizedGroups = (
+				A3B100032F9A000100798A70 /* Scriberocks */,
+			);
 			name = Scriberocks;
 			packageProductDependencies = (
 				A3762E4D2F2DC4BA00798A70 /* FirebaseFirestore */,
+				A3B100012F9A000100798A70 /* FirebaseAuth */,
 			);
 			productName = Scriberocks;
 			productReference = A33A02402A0CFABC0039C134 /* Scriberocks.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A3B100082F9A000100798A70 /* ScriberocksTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A3B1000E2F9A000100798A70 /* Build configuration list for PBXNativeTarget "ScriberocksTests" */;
+			buildPhases = (
+				A3B100092F9A000100798A70 /* Sources */,
+				A3B1000A2F9A000100798A70 /* Frameworks */,
+				A3B1000B2F9A000100798A70 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A3B100142F9A000100798A70 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A3B100112F9A000100798A70 /* ScriberocksTests */,
+			);
+			name = ScriberocksTests;
+			packageProductDependencies = (
+			);
+			productName = ScriberocksTests;
+			productReference = A3B100102F9A000100798A70 /* ScriberocksTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -105,16 +134,19 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1340;
-				LastUpgradeCheck = 1340;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					A33A023F2A0CFABC0039C134 = {
 						CreatedOnToolsVersion = 13.4.1;
 					};
+					A3B100082F9A000100798A70 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = A33A023F2A0CFABC0039C134;
+					};
 				};
 			};
 			buildConfigurationList = A33A023B2A0CFABC0039C134 /* Build configuration list for PBXProject "Scriberocks" */;
-			compatibilityVersion = "Xcode 13.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -122,14 +154,17 @@
 				Base,
 			);
 			mainGroup = A33A02372A0CFABC0039C134;
+			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A3762E4C2F2DC4B900798A70 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
+			preferredProjectObjectVersion = 77;
 			productRefGroup = A33A02412A0CFABC0039C134 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				A33A023F2A0CFABC0039C134 /* Scriberocks */,
+				A3B100082F9A000100798A70 /* ScriberocksTests */,
 			);
 		};
 /* End PBXProject section */
@@ -139,10 +174,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A3A284312A55AFE500A8B6C3 /* netrc in Resources */,
-				A37810EC2A69854A002EB3C3 /* GoogleService-Info.plist in Resources */,
-				A33A024B2A0CFABE0039C134 /* Preview Assets.xcassets in Resources */,
-				A33A02482A0CFABE0039C134 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A3B1000B2F9A000100798A70 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -153,21 +191,35 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A33A02462A0CFABD0039C134 /* ContentView.swift in Sources */,
-				A33A02442A0CFABC0039C134 /* ScriberocksApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A3B100092F9A000100798A70 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A3B100142F9A000100798A70 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A33A023F2A0CFABC0039C134 /* Scriberocks */;
+			targetProxy = A3B100132F9A000100798A70 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A33A024C2A0CFABE0039C134 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -197,7 +249,8 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -211,12 +264,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -225,9 +278,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -257,7 +311,8 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -265,12 +320,11 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -280,12 +334,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Scriberocks/Scriberocks.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_ASSET_PATHS = "\"Scriberocks/Preview Content\"";
 				DEVELOPMENT_TEAM = 7279TDDFK4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Scriberocks;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -295,10 +353,13 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = sayists.Scriberocks;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -309,12 +370,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Scriberocks/Scriberocks.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_ASSET_PATHS = "\"Scriberocks/Preview Content\"";
 				DEVELOPMENT_TEAM = 7279TDDFK4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Scriberocks;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -324,12 +389,57 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = sayists.Scriberocks;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A3B1000C2F9A000100798A70 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 20;
+				DEVELOPMENT_TEAM = 7279TDDFK4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.6;
+				PRODUCT_BUNDLE_IDENTIFIER = sayists.ScriberocksTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Scriberocks.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Scriberocks";
+			};
+			name = Debug;
+		};
+		A3B1000D2F9A000100798A70 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 20;
+				DEVELOPMENT_TEAM = 7279TDDFK4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.6;
+				PRODUCT_BUNDLE_IDENTIFIER = sayists.ScriberocksTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Scriberocks.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Scriberocks";
 			};
 			name = Release;
 		};
@@ -354,6 +464,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		A3B1000E2F9A000100798A70 /* Build configuration list for PBXNativeTarget "ScriberocksTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A3B1000C2F9A000100798A70 /* Debug */,
+				A3B1000D2F9A000100798A70 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -362,7 +481,7 @@
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 12.8.0;
+				minimumVersion = 13.0.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -372,6 +491,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A3762E4C2F2DC4B900798A70 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		A3B100012F9A000100798A70 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A3762E4C2F2DC4B900798A70 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

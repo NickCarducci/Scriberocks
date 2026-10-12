@@ -1,0 +1,7 @@
+.DS_Store
+xcuserdata/
+build/
+DerivedData/
+# credentials — never commit or bundle
+netrc
+.netrc

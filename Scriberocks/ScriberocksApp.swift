@@ -6,37 +6,47 @@
 //
 
 import SwiftUI
-import Firebase
-//import FirebaseCore
-//import FirebaseFirestore
-//import FirebaseAuth
+import DeclaredAgeRange // Required at the app's entry point for requestAgeRange.
+import FirebaseCore
 
-//let db = Firestore.firestore()
-
-class FirestoreManager: ObservableObject {
-
-}
-@main 
+@main
 struct ScriberocksApp: App {
-    @StateObject var firestoreManager = FirestoreManager()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+
+    @StateObject private var container: AppContainer
+    @StateObject private var authState: UserAuthState
+    @StateObject private var rockStore: RockStore
+    @StateObject private var childSafetyManager = ChildSafetyManager()
+    @Environment(\.scenePhase) private var scenePhase
+
     init() {
-        FirebaseApp.configure()
+        // The delegate isn't guaranteed to run before this init, and
+        // UserAuthState touches Auth.auth() immediately.
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+        let container = AppContainer()
+        _container = StateObject(wrappedValue: container)
+        _authState = StateObject(wrappedValue: UserAuthState())
+        _rockStore = StateObject(wrappedValue: RockStore(sync: container.rockSyncService))
     }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(container)
+                .environmentObject(authState)
+                .environmentObject(rockStore)
+                .environmentObject(childSafetyManager)
+                .task(id: authState.userId) {
+                    await rockStore.setUser(authState.userId)
+                }
         }
-    }
-}//https://developer.apple.com/documentation/swiftui/text/init(_:)-9d1g4
-//https://www.reddit.com/r/SwiftUI/comments/owez71/canvas_not_showing_in_xcode_12/
-//https://stackoverflow.com/a/66889681/11711280
-
-struct YourView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            ContentView()
-                .previewInterfaceOrientation(.portrait)
+        .onChange(of: scenePhase) { _, phase in
+            // Pick up edits made on the web while the app was in the background.
+            if phase == .active {
+                Task { await rockStore.refresh() }
+            }
         }
     }
 }
-//https://developer.apple.com/forums/thread/707322
