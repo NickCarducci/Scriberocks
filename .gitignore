@@ -6,3 +6,4 @@ DerivedData/
 netrc
 .netrc
 *.p8
+/Models

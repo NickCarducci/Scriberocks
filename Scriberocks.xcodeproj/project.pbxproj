@@ -200,15 +200,15 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"$(SRCROOT)/../../core/models/lexicon.bin",
-				"$(SRCROOT)/../../core/models/tagger.bin",
-				"$(SRCROOT)/../../core/models/xpos.bin",
-				"$(SRCROOT)/../../core/models/parser.bin",
-				"$(SRCROOT)/../../core/models/inflect.bin",
-				"$(SRCROOT)/../../core/models/lm.bin",
-				"$(SRCROOT)/../../core/models/usage/usage.safetensors",
-				"$(SRCROOT)/../../core/models/usage/usage.json",
-				"$(SRCROOT)/../../core/models/usage/senses.bin",
+				"$(SRCROOT)/Models/lexicon.bin",
+				"$(SRCROOT)/Models/tagger.bin",
+				"$(SRCROOT)/Models/xpos.bin",
+				"$(SRCROOT)/Models/parser.bin",
+				"$(SRCROOT)/Models/inflect.bin",
+				"$(SRCROOT)/Models/lm.bin",
+				"$(SRCROOT)/Models/usage/usage.safetensors",
+				"$(SRCROOT)/Models/usage/usage.json",
+				"$(SRCROOT)/Models/usage/senses.bin",
 			);
 			name = "Bundle language models";
 			outputFileListPaths = (
@@ -226,7 +226,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\nsrc=\"$SRCROOT/../../core/models\"\ndst=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Models\"\nmkdir -p \"$dst\"\nfor f in lexicon tagger xpos parser inflect lm; do\n  if [ -f \"$src/$f.bin\" ]; then cp \"$src/$f.bin\" \"$dst/\"; else echo \"warning: $src/$f.bin missing — build core models (see core/README.md)\"; fi\ndone\nif [ -d \"$src/usage\" ]; then mkdir -p \"$dst/usage\" && cp \"$src\"/usage/usage.safetensors \"$src\"/usage/usage.json \"$src\"/usage/senses.bin \"$dst/usage/\"; else echo \"warning: no usage model — suggestions use dictionary ranking only\"; fi\n";
+			shellScript = "set -e\nsrc=\"$SRCROOT/Models\"\ndst=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Models\"\nmissing=\"\"\nfor f in lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin; do\n  [ -f \"$src/$f\" ] || missing=\"$missing $f\"\ndone\nif [ -n \"$missing\" ]; then\n  msg=\"language models missing from Models/ ($missing) - run scripts/fetch-models.sh (or --from ../../core/models)\"\n  if [ \"$CONFIGURATION\" = \"Release\" ]; then echo \"error: $msg\"; exit 1; fi\n  echo \"warning: $msg - suggestions will be unavailable in this build\"\n  exit 0\nfi\nmkdir -p \"$dst/usage\"\nfor f in lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin; do cp \"$src/$f\" \"$dst/$f\"; done\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -379,6 +379,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Scriberocks/Scriberocks.entitlements;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_ASSET_PATHS = "\"Scriberocks/Preview Content\"";
@@ -415,6 +416,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Scriberocks/Scriberocks.entitlements;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_ASSET_PATHS = "\"Scriberocks/Preview Content\"";
