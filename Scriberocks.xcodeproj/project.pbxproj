@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A3762E4E2F2DC4BA00798A70 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = A3762E4D2F2DC4BA00798A70 /* FirebaseFirestore */; };
 		A3B100022F9A000100798A70 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A3B100012F9A000100798A70 /* FirebaseAuth */; };
+		A3B100222F9A000100798A70 /* ScribeCore in Frameworks */ = {isa = PBXBuildFile; productRef = A3B100212F9A000100798A70 /* ScribeCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,7 @@
 			files = (
 				A3762E4E2F2DC4BA00798A70 /* FirebaseFirestore in Frameworks */,
 				A3B100022F9A000100798A70 /* FirebaseAuth in Frameworks */,
+				A3B100222F9A000100798A70 /* ScribeCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +89,7 @@
 				A33A023C2A0CFABC0039C134 /* Sources */,
 				A33A023D2A0CFABC0039C134 /* Frameworks */,
 				A33A023E2A0CFABC0039C134 /* Resources */,
+				A3B100232F9A000100798A70 /* Bundle language models */,
 			);
 			buildRules = (
 			);
@@ -99,6 +102,7 @@
 			packageProductDependencies = (
 				A3762E4D2F2DC4BA00798A70 /* FirebaseFirestore */,
 				A3B100012F9A000100798A70 /* FirebaseAuth */,
+				A3B100212F9A000100798A70 /* ScribeCore */,
 			);
 			productName = Scriberocks;
 			productReference = A33A02402A0CFABC0039C134 /* Scriberocks.app */;
@@ -157,6 +161,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A3762E4C2F2DC4B900798A70 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				A3B100202F9A000100798A70 /* XCLocalSwiftPackageReference "../../core/swift/ScribeCore" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A33A02412A0CFABC0039C134 /* Products */;
@@ -185,6 +190,45 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A3B100232F9A000100798A70 /* Bundle language models */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../../core/models/lexicon.bin",
+				"$(SRCROOT)/../../core/models/tagger.bin",
+				"$(SRCROOT)/../../core/models/xpos.bin",
+				"$(SRCROOT)/../../core/models/parser.bin",
+				"$(SRCROOT)/../../core/models/inflect.bin",
+				"$(SRCROOT)/../../core/models/lm.bin",
+				"$(SRCROOT)/../../core/models/usage/usage.safetensors",
+				"$(SRCROOT)/../../core/models/usage/usage.json",
+				"$(SRCROOT)/../../core/models/usage/senses.bin",
+			);
+			name = "Bundle language models";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/lexicon.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/tagger.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/xpos.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/parser.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/inflect.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/lm.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/usage/usage.safetensors",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/usage/usage.json",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/usage/senses.bin",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nsrc=\"$SRCROOT/../../core/models\"\ndst=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Models\"\nmkdir -p \"$dst\"\nfor f in lexicon tagger xpos parser inflect lm; do\n  if [ -f \"$src/$f.bin\" ]; then cp \"$src/$f.bin\" \"$dst/\"; else echo \"warning: $src/$f.bin missing — build core models (see core/README.md)\"; fi\ndone\nif [ -d \"$src/usage\" ]; then mkdir -p \"$dst/usage\" && cp \"$src\"/usage/usage.safetensors \"$src\"/usage/usage.json \"$src\"/usage/senses.bin \"$dst/usage/\"; else echo \"warning: no usage model — suggestions use dictionary ranking only\"; fi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A33A023C2A0CFABC0039C134 /* Sources */ = {
@@ -475,6 +519,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		A3B100202F9A000100798A70 /* XCLocalSwiftPackageReference "../../core/swift/ScribeCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../core/swift/ScribeCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		A3762E4C2F2DC4B900798A70 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -496,6 +547,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A3762E4C2F2DC4B900798A70 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
+		};
+		A3B100212F9A000100798A70 /* ScribeCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScribeCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

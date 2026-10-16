@@ -60,6 +60,21 @@ final class RockStore: ObservableObject {
         push(updated)
     }
 
+    /// Replaces the rock's text with a new revision (typed edit or accepted suggestion).
+    func revise(_ id: Rock.ID, to text: String, source: Revision.Source) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, var rock = rocks.first(where: { $0.id == id }) else { return }
+        rock.revise(to: trimmed, source: source)
+        update(rock)
+    }
+
+    /// Steps through history (‹ ›) without creating a revision.
+    func showRevision(_ id: Rock.ID, index: Int) {
+        guard var rock = rocks.first(where: { $0.id == id }) else { return }
+        rock.show(revision: index)
+        update(rock)
+    }
+
     func toggleDiamond(_ rock: Rock) {
         var toggled = rock
         toggled.isDiamond.toggle()

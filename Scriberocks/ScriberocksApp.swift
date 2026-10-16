@@ -17,6 +17,7 @@ struct ScriberocksApp: App {
     @StateObject private var authState: UserAuthState
     @StateObject private var rockStore: RockStore
     @StateObject private var childSafetyManager = ChildSafetyManager()
+    @StateObject private var suggestionEngine = SuggestionEngine()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -38,6 +39,7 @@ struct ScriberocksApp: App {
                 .environmentObject(authState)
                 .environmentObject(rockStore)
                 .environmentObject(childSafetyManager)
+                .environmentObject(suggestionEngine)
                 .task(id: authState.userId) {
                     await rockStore.setUser(authState.userId)
                 }

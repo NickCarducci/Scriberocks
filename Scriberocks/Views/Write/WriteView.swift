@@ -3,9 +3,9 @@ import SwiftUI
 struct WriteView: View {
     @StateObject private var viewModel: WriteViewModel
     @FocusState private var isEditorFocused: Bool
-    private let onSaved: () -> Void
+    private let onSaved: (Rock) -> Void
 
-    init(store: RockStore, onSaved: @escaping () -> Void = {}) {
+    init(store: RockStore, onSaved: @escaping (Rock) -> Void = { _ in }) {
         _viewModel = StateObject(wrappedValue: WriteViewModel(store: store))
         self.onSaved = onSaved
     }
@@ -30,9 +30,9 @@ struct WriteView: View {
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Save", systemImage: "checkmark") {
-                            if viewModel.save() {
+                            if let rock = viewModel.save() {
                                 isEditorFocused = false
-                                onSaved()
+                                onSaved(rock)
                             }
                         }
                         .disabled(!viewModel.canSave)

@@ -107,6 +107,48 @@ struct RockStoreTests {
     }
 }
 
+struct RevisionTests {
+    @Test func reviseAppendsAndShowsLatest() {
+        var rock = Rock(text: "first")
+        rock.revise(to: "second", source: .edited)
+        rock.revise(to: "third", source: .suggestion)
+        #expect(rock.text == "third")
+        #expect(rock.revisions.map(\.source) == [.written, .edited, .suggestion])
+        #expect(rock.revisionIndex == 2)
+    }
+
+    @Test func steppingBackThenRevisingKeepsAllHistory() {
+        var rock = Rock(text: "a")
+        rock.revise(to: "b", source: .edited)
+        rock.show(revision: 0)
+        #expect(rock.text == "a" && rock.canGoForward && !rock.canGoBack)
+        rock.revise(to: "c", source: .edited)
+        #expect(rock.revisions.map(\.text) == ["a", "b", "c"])
+        #expect(rock.revisionIndex == 2)
+    }
+
+    @Test func oldRocksDecodeWithOneRevision() throws {
+        let json = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","text":"legacy","createdAt":0,"updatedAt":0,"isDiamond":false}"#
+        let rock = try JSONDecoder().decode(Rock.self, from: Data(json.utf8))
+        #expect(rock.revisions.map(\.text) == ["legacy"])
+        #expect(rock.revisionIndex == 0)
+    }
+
+    @Test @MainActor func storeRevisionsSurviveRelaunch() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "rocks-\(UUID()).json")
+        let defaults = UserDefaults(suiteName: "rev-\(UUID())")!
+        let store = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: defaults)
+        let rock = try #require(store.add(text: "rough"))
+        store.revise(rock.id, to: "polished", source: .suggestion)
+        store.showRevision(rock.id, index: 0)
+
+        let reloaded = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: defaults)
+        let saved = try #require(reloaded.rocks.first)
+        #expect(saved.text == "rough")
+        #expect(saved.revisions.count == 2 && saved.revisionIndex == 0)
+    }
+}
+
 struct RocksCSVTests {
     @Test func escapesCommasQuotesAndNewlines() {
         #expect(RocksCSV.escape("plain") == "plain")

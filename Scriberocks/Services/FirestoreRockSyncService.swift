@@ -27,12 +27,18 @@ struct FirestoreRockSyncService: RockSyncService {
             }
             guard let text = data["text"] as? String,
                   let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() else { continue }
+            let revisions = (data["revisions"] as? [[String: Any]])?.compactMap { r -> Revision? in
+                guard let text = r["text"] as? String, let at = (r["createdAt"] as? Timestamp)?.dateValue() else { return nil }
+                return Revision(text: text, createdAt: at, source: (r["source"] as? String).flatMap(Revision.Source.init) ?? .edited)
+            }
             remote.rocks.append(Rock(
                 id: id,
                 text: text,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                isDiamond: data["isDiamond"] as? Bool ?? false
+                isDiamond: data["isDiamond"] as? Bool ?? false,
+                revisions: revisions,
+                revisionIndex: data["revisionIndex"] as? Int
             ))
         }
         return remote
@@ -44,6 +50,10 @@ struct FirestoreRockSyncService: RockSyncService {
             "createdAt": Timestamp(date: rock.createdAt),
             "updatedAt": Timestamp(date: rock.updatedAt),
             "isDiamond": rock.isDiamond,
+            "revisions": rock.revisions.map {
+                ["text": $0.text, "createdAt": Timestamp(date: $0.createdAt), "source": $0.source.rawValue] as [String: Any]
+            },
+            "revisionIndex": rock.revisionIndex,
         ])
     }
 

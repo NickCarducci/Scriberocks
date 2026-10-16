@@ -20,11 +20,11 @@ final class WriteViewModel: ObservableObject {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    /// Saves the draft as a new rock and clears it. Returns false if empty.
+    /// Saves the draft as a new rock and clears it. Nil if empty.
     @discardableResult
-    func save() -> Bool {
-        guard store.add(text: draft) != nil else { return false }
+    func save() -> Rock? {
+        guard let rock = store.add(text: draft) else { return nil }
         draft = ""
-        return true
+        return rock
     }
 }

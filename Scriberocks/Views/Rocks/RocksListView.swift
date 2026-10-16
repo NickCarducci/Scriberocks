@@ -2,13 +2,15 @@ import SwiftUI
 
 struct RocksListView: View {
     @StateObject private var viewModel: RocksViewModel
+    @Binding private var path: [Rock.ID]
 
-    init(store: RockStore) {
+    init(store: RockStore, path: Binding<[Rock.ID]> = .constant([])) {
         _viewModel = StateObject(wrappedValue: RocksViewModel(store: store))
+        _path = path
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if viewModel.isEmpty {
                     ContentUnavailableView(
