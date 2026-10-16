@@ -18,16 +18,18 @@ final class SuggestionEngine: ObservableObject {
             state = .unavailable("Language models aren't bundled in this build.")
             return
         }
-        Task.detached(priority: .userInitiated) { [weak self] in
-            let result = Result { try ScribeEngine(modelsDir: path) }
-            await MainActor.run {
-                switch result {
-                case .success(let engine):
-                    self?.engine = engine
-                    self?.state = .ready
-                case .failure(let error):
-                    self?.state = .unavailable(error.localizedDescription)
-                }
+        Task { [weak self] in
+            // Load off the main thread; apply the result back on the main actor.
+            let result = await Task.detached(priority: .userInitiated) {
+                Result { try ScribeEngine(modelsDir: path) }
+            }.value
+            guard let self else { return }
+            switch result {
+            case .success(let engine):
+                self.engine = engine
+                self.state = .ready
+            case .failure(let error):
+                self.state = .unavailable(error.localizedDescription)
             }
         }
     }

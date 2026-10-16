@@ -136,6 +136,12 @@ private final class AppleAuthorizationRunner: NSObject,
 
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-        return scenes.flatMap(\.windows).first(where: \.isKeyWindow) ?? ASPresentationAnchor()
+        if let key = scenes.flatMap(\.windows).first(where: \.isKeyWindow) {
+            return key
+        }
+        // No key window yet: anchor to the active scene (iOS 26 requires a scene).
+        let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+        guard let scene else { preconditionFailure("Sign in with Apple needs a window scene") }
+        return ASPresentationAnchor(windowScene: scene)
     }
 }
