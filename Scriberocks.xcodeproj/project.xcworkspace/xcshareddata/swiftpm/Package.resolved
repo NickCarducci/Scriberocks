@@ -123,8 +123,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/NickCarducci/scriberocks-backend",
       "state" : {
-        "revision" : "dad6a2fb0c853e873abd454944cace095776f69e",
-        "version" : "0.1.0"
+        "revision" : "77be9fa841a7f242f9df31a4b0255645987f7c4c",
+        "version" : "0.1.1"
       }
     }
   ],
