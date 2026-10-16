@@ -5,3 +5,4 @@ DerivedData/
 # credentials — never commit or bundle
 netrc
 .netrc
+*.p8

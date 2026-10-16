@@ -64,6 +64,33 @@ struct RockStoreTests {
         #expect(result.rocks.first?.id == remoteOnly.id)
     }
 
+    @Test func pendingLocalDeletionsKeepServerCopiesAway() {
+        let t1 = Date(timeIntervalSince1970: 1_000)
+        let t2 = Date(timeIntervalSince1970: 2_000)
+        let deletedWhileSignedOut = Rock(text: "gone", createdAt: t1)
+        let editedElsewhereLater = Rock(text: "edited on web after", createdAt: t1, updatedAt: t2)
+
+        let result = RockStore.merge(
+            local: [],
+            remote: RemoteRocks(rocks: [deletedWhileSignedOut, editedElsewhereLater]),
+            localDeletions: [deletedWhileSignedOut.id: t2, editedElsewhereLater.id: t1]
+        )
+
+        #expect(result.rocks.map(\.id) == [editedElsewhereLater.id])
+    }
+
+    @Test func deletionsSurviveRelaunch() throws {
+        let defaults = freshDefaults()
+        let (store, url) = makeStore(defaults: defaults)
+        let rock = try #require(store.add(text: "delete me offline"))
+        store.delete([rock.id])
+
+        let reloaded = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: defaults)
+        let result = RockStore.merge(local: reloaded.rocks, remote: RemoteRocks(rocks: [rock]), localDeletions: [rock.id: .now])
+        #expect(result.rocks.isEmpty)
+        #expect(FileManager.default.fileExists(atPath: url.deletingPathExtension().appendingPathExtension("deletions.json").path()))
+    }
+
     @Test func mergeAppliesDeletionsFromOtherDevices() {
         let t1 = Date(timeIntervalSince1970: 1_000)
         let t2 = Date(timeIntervalSince1970: 2_000)

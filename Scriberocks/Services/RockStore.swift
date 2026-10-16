@@ -13,7 +13,11 @@ final class RockStore: ObservableObject {
     static let legacyDefaultsKey = "ROCKS"
 
     private let fileURL: URL
+    private let deletionsURL: URL
     private let defaults: UserDefaults
+    /// Deletions the server hasn't confirmed yet (made offline or signed
+    /// out), so a later merge can't bring those rocks back.
+    private var pendingDeletions: [UUID: Date] = [:]
     private let sync: RockSyncService
     private var userId: String?
 
@@ -24,6 +28,7 @@ final class RockStore: ObservableObject {
     ) {
         self.sync = sync
         self.fileURL = fileURL
+        self.deletionsURL = fileURL.deletingPathExtension().appendingPathExtension("deletions.json")
         self.defaults = defaults
         load()
     }
@@ -63,14 +68,11 @@ final class RockStore: ObservableObject {
 
     func delete(_ ids: Set<UUID>) {
         rocks.removeAll { ids.contains($0.id) }
+        let now = Date.now
+        for id in ids { pendingDeletions[id] = now }
         persist()
-        guard let userId else { return }
-        Task {
-            for id in ids {
-                do { try await sync.delete(rockId: id, userId: userId) }
-                catch { syncError = error.localizedDescription }
-            }
-        }
+        guard userId != nil else { return }
+        Task { await pushDeletions() }
     }
 
     // MARK: - Account
@@ -92,7 +94,7 @@ final class RockStore: ObservableObject {
         defer { isSyncing = false }
         do {
             let remote = try await sync.fetchRocks(userId: userId)
-            let merged = Self.merge(local: rocks, remote: remote)
+            let merged = Self.merge(local: rocks, remote: remote, localDeletions: pendingDeletions)
             if merged.rocks != rocks {
                 rocks = merged.rocks
                 persist()
@@ -100,18 +102,26 @@ final class RockStore: ObservableObject {
             for rock in merged.needsUpload {
                 try await sync.upsert(rock, userId: userId)
             }
+            await pushDeletions()
             syncError = nil
         } catch {
             syncError = error.localizedDescription
         }
     }
 
-    /// Last-write-wins merge by `updatedAt`. A tombstone newer than the local
-    /// copy deletes it. Returns the merged list (newest first) and the rocks
-    /// the server is missing or has an older copy of.
-    nonisolated static func merge(local: [Rock], remote: RemoteRocks) -> (rocks: [Rock], needsUpload: [Rock]) {
+    /// Last-write-wins merge by `updatedAt`. A deletion (from the server or
+    /// pending on this device) newer than a copy removes it. Returns the
+    /// merged list (newest first) and the rocks the server is missing or has
+    /// an older copy of.
+    nonisolated static func merge(
+        local: [Rock],
+        remote: RemoteRocks,
+        localDeletions: [UUID: Date] = [:]
+    ) -> (rocks: [Rock], needsUpload: [Rock]) {
         let remoteByID = Dictionary(remote.rocks.map { ($0.id, $0) }, uniquingKeysWith: { a, b in a.updatedAt >= b.updatedAt ? a : b })
-        var mergedByID = remoteByID
+        var mergedByID = remoteByID.filter { id, rock in
+            localDeletions[id].map { $0 < rock.updatedAt } ?? true
+        }
         var needsUpload: [Rock] = []
         for rock in local {
             if let server = remoteByID[rock.id], server.updatedAt >= rock.updatedAt { continue }
@@ -125,6 +135,19 @@ final class RockStore: ObservableObject {
 
     // MARK: - Persistence
 
+    private func pushDeletions() async {
+        guard let userId else { return }
+        for (id, _) in pendingDeletions {
+            do {
+                try await sync.delete(rockId: id, userId: userId)
+                pendingDeletions[id] = nil
+            } catch {
+                syncError = error.localizedDescription
+            }
+        }
+        persist()
+    }
+
     private func push(_ rock: Rock) {
         guard let userId else { return }
         Task {
@@ -134,6 +157,10 @@ final class RockStore: ObservableObject {
     }
 
     private func load() {
+        if let data = try? Data(contentsOf: deletionsURL),
+           let decoded = try? JSONDecoder().decode([UUID: Date].self, from: data) {
+            pendingDeletions = decoded
+        }
         if let data = try? Data(contentsOf: fileURL),
            let decoded = try? JSONDecoder().decode([Rock].self, from: data) {
             rocks = decoded
@@ -168,6 +195,7 @@ final class RockStore: ObservableObject {
             )
             let data = try JSONEncoder().encode(rocks)
             try data.write(to: fileURL, options: [.atomic, .completeFileProtection])
+            try JSONEncoder().encode(pendingDeletions).write(to: deletionsURL, options: [.atomic, .completeFileProtection])
             return true
         } catch {
             syncError = "Couldn't save on this device: \(error.localizedDescription)"
