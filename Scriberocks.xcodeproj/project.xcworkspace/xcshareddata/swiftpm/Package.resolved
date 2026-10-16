@@ -1,5 +1,5 @@
 {
-  "originHash" : "a1569f9895aa2be8e24832f98525d5da4eb90b5d158a82691c15b47eb72a13d7",
+  "originHash" : "a79c0e8fcadf33bf46b6634d345fd15b1b7e837b242f37d93eac9b0adaa2e69f",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -116,6 +116,15 @@
       "state" : {
         "revision" : "f4a19a3c313dc2616c70bb49d29a799fb16be837",
         "version" : "2.4.1"
+      }
+    },
+    {
+      "identity" : "scriberocks-backend",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/NickCarducci/scriberocks-backend",
+      "state" : {
+        "revision" : "dad6a2fb0c853e873abd454944cace095776f69e",
+        "version" : "0.1.0"
       }
     }
   ],

@@ -161,7 +161,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A3762E4C2F2DC4B900798A70 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
-				A3B100202F9A000100798A70 /* XCLocalSwiftPackageReference "../../core/swift/ScribeCore" */,
+				A3B100202F9A000100798A70 /* XCRemoteSwiftPackageReference "scriberocks-backend" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A33A02412A0CFABC0039C134 /* Products */;
@@ -519,14 +519,15 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		A3B100202F9A000100798A70 /* XCLocalSwiftPackageReference "../../core/swift/ScribeCore" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../core/swift/ScribeCore;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
+		A3B100202F9A000100798A70 /* XCRemoteSwiftPackageReference "scriberocks-backend" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/NickCarducci/scriberocks-backend";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.1.0;
+			};
+		};
 		A3762E4C2F2DC4B900798A70 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
@@ -550,6 +551,7 @@
 		};
 		A3B100212F9A000100798A70 /* ScribeCore */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = A3B100202F9A000100798A70 /* XCRemoteSwiftPackageReference "scriberocks-backend" */;
 			productName = ScribeCore;
 		};
 /* End XCSwiftPackageProductDependency section */
