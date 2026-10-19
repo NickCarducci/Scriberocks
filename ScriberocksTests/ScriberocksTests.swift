@@ -271,3 +271,56 @@ struct InlineDiffTests {
         #expect(InlineDiff.joined(["Well", ",", "it", "is", "(", "fine", ")", "."]) == "Well, it is (fine).")
     }
 }
+
+/// The option pager's swipe: latch an axis after a few points, lock the other
+/// one, turn a page only on a clear horizontal swipe, resist past the ends.
+struct PageSwipeTests {
+    @Test func waitsForMovementBeforeLatching() {
+        var swipe = PageSwipe()
+        #expect(swipe.update(CGSize(width: 3, height: 2)) == nil)
+        #expect(swipe.axis == .undecided)
+        #expect(swipe.update(CGSize(width: -12, height: 4)) == -12)
+        #expect(swipe.axis == .horizontal)
+    }
+
+    @Test func aVerticalLatchIgnoresLaterHorizontalMovement() {
+        var swipe = PageSwipe()
+        _ = swipe.update(CGSize(width: 2, height: 9))
+        #expect(swipe.axis == .vertical)
+        #expect(swipe.update(CGSize(width: -80, height: 10)) == nil)
+    }
+
+    @Test func turnsAPageOnlyOnAClearHorizontalSwipe() {
+        var swipe = PageSwipe()
+        _ = swipe.update(CGSize(width: -10, height: 0))
+        #expect(swipe.step(translation: CGSize(width: -70, height: 5), predicted: CGSize(width: -90, height: 5), width: 400) == 1)
+        #expect(swipe.step(translation: CGSize(width: 70, height: 5), predicted: CGSize(width: 90, height: 5), width: 400) == -1)
+        #expect(swipe.step(translation: CGSize(width: -20, height: 0), predicted: CGSize(width: -40, height: 0), width: 400) == 0)
+        #expect(swipe.step(translation: CGSize(width: -70, height: 60), predicted: CGSize(width: -90, height: 70), width: 400) == 0, "not 2:1 horizontal")
+    }
+
+    @Test func aFlickCountsByWhereItWouldLand() {
+        var swipe = PageSwipe()
+        _ = swipe.update(CGSize(width: -10, height: 0))
+        #expect(swipe.step(translation: CGSize(width: -30, height: 0), predicted: CGSize(width: -200, height: 0), width: 400) == 1)
+    }
+
+    @Test func noPageTurnAfterAVerticalLatch() {
+        var swipe = PageSwipe()
+        _ = swipe.update(CGSize(width: 0, height: 10))
+        #expect(swipe.step(translation: CGSize(width: -200, height: 10), predicted: CGSize(width: -300, height: 10), width: 400) == 0)
+    }
+
+    @Test func resistsPastTheFirstAndLastPages() {
+        #expect(PageSwipe.offset(drag: 90, index: 0, count: 3) == 30)
+        #expect(PageSwipe.offset(drag: -90, index: 3, count: 3) == -30)
+        #expect(PageSwipe.offset(drag: -90, index: 1, count: 3) == -90)
+    }
+
+    @Test func resetForgetsTheLatch() {
+        var swipe = PageSwipe()
+        _ = swipe.update(CGSize(width: 20, height: 0))
+        swipe.reset()
+        #expect(swipe.axis == .undecided)
+    }
+}

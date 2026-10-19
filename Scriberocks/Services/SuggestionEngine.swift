@@ -34,8 +34,16 @@ final class SuggestionEngine: ObservableObject {
         }
     }
 
+    /// The last request's result: views ask again on every render while
+    /// swiping, and the engine call isn't free.
+    private var last: (text: String, limit: UInt32, variants: [RockVariant])?
+
     /// Other cuts of `text`, best first. Empty until the engine is ready.
     func variants(for text: String, limit: UInt32 = 40) -> [RockVariant] {
-        engine?.variants(rock: text, limit: limit) ?? []
+        guard let engine else { return [] }
+        if let last, last.text == text, last.limit == limit { return last.variants }
+        let result = engine.variants(rock: text, limit: limit)
+        last = (text, limit, result)
+        return result
     }
 }

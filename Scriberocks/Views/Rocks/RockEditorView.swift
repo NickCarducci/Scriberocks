@@ -7,6 +7,10 @@ struct RockEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isEditing: Bool
     @State private var confirmDelete = false
+    /// Typing in the editor (tap the current text); otherwise the options pager.
+    @State private var isTyping = false
+    @State private var swipe = PageSwipe()
+    @State private var dragOffset: CGFloat = 0
 
     init(rockID: Rock.ID, store: RockStore) {
         _viewModel = StateObject(wrappedValue: RockEditorViewModel(rockID: rockID, store: store))
@@ -15,14 +19,19 @@ struct RockEditorView: View {
     var body: some View {
         Group {
             if viewModel.exists {
+                let variants = variants
                 VStack(spacing: 0) {
-                    TextEditor(text: $viewModel.text)
-                        .focused($isEditing)
-                        .scrollContentBackground(.hidden)
-                        .padding(.horizontal)
-                        .overlay { inlinePreview }
+                    if isTyping || variants.isEmpty {
+                        TextEditor(text: $viewModel.text)
+                            .focused($isEditing)
+                            .scrollContentBackground(.hidden)
+                            .padding(.horizontal)
+                            .onAppear { if isTyping { isEditing = true } }
+                    } else {
+                        pager(variants)
+                    }
                     if !isEditing {
-                        suggestionsBar
+                        suggestionsBar(variants)
                     }
                 }
             } else {
@@ -72,11 +81,18 @@ struct RockEditorView: View {
             if let i = args.firstIndex(of: "-previewOption"), i + 1 < args.count, let n = Int(args[i + 1]), !variants.isEmpty {
                 viewModel.selectOption(n, count: variants.count)
             }
+            // `-dragOffset X` freezes the pager mid-drag (screenshots of the transition).
+            if let i = args.firstIndex(of: "-dragOffset"), i + 1 < args.count, let x = Double(args[i + 1]) {
+                dragOffset = x
+            }
         }
         #endif
         .onDisappear(perform: viewModel.commit)
         .onChange(of: isEditing) { _, editing in
-            if !editing { viewModel.commit() }
+            if !editing {
+                viewModel.commit()
+                isTyping = false
+            }
         }
     }
 
@@ -85,37 +101,68 @@ struct RockEditorView: View {
         return suggestions.variants(for: viewModel.rock?.text ?? viewModel.text)
     }
 
-    /// The selected option, drawn in place of the text (changed words
-    /// highlighted). Swipe to move through options; nothing changes until Save.
-    @ViewBuilder
-    private var inlinePreview: some View {
-        let options = isEditing ? [] : variants
-        if viewModel.optionIndex > 0, options.indices.contains(viewModel.optionIndex - 1) {
-            let variant = options[viewModel.optionIndex - 1]
-            ScrollView {
-                Text(Self.inlineDiff(from: viewModel.rock?.text ?? viewModel.text, to: variant.text))
-                    .font(.body)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 8)
-            }
-            .padding(.horizontal)
-            .background(.background)
-            .contentShape(.rect)
-            .gesture(
-                DragGesture(minimumDistance: 30).onEnded { drag in
-                    guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
-                    withAnimation(.snappy) { viewModel.stepOption(drag.translation.width < 0 ? 1 : -1, count: options.count) }
+    /// The writing area as pages: the current text, then each option (as a
+    /// comparison with the current text). The finger drags the whole page and
+    /// the neighbor slides in; a horizontal latch locks vertical scrolling for
+    /// the rest of the drag (PageSwipe). Tap the current text to type.
+    private func pager(_ variants: [RockVariant]) -> some View {
+        let current = viewModel.rock?.text ?? viewModel.text
+        let index = viewModel.optionIndex
+        let count = variants.count
+        return GeometryReader { geo in
+            let width = geo.size.width
+            ZStack(alignment: .topLeading) {
+                ForEach(max(0, index - 1)...min(count, index + 1), id: \.self) { k in
+                    page(k == 0 ? AttributedString(current) : Self.inlineDiff(from: current, to: variants[k - 1].text))
+                        .frame(width: width, height: geo.size.height)
+                        .offset(x: CGFloat(k - index) * width + PageSwipe.offset(drag: dragOffset, index: index, count: count))
+                        .onTapGesture {
+                            if k == 0, swipe.axis == .undecided { isTyping = true }
+                        }
                 }
-            )
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Option \(viewModel.optionIndex) of \(options.count): \(variant.text)")
-            .accessibilityHint("Swipe up or down for other options; Save keeps this one")
-            .accessibilityAdjustableAction { direction in
-                viewModel.stepOption(direction == .increment ? 1 : -1, count: options.count)
             }
-            .transition(.opacity)
+            .clipped()
+            .contentShape(.rect)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: PageSwipe.latchDistance)
+                    .onChanged { drag in
+                        if let x = swipe.update(drag.translation) {
+                            var t = Transaction()
+                            t.disablesAnimations = true
+                            withTransaction(t) { dragOffset = x }
+                        }
+                    }
+                    .onEnded { drag in
+                        let step = swipe.step(translation: drag.translation, predicted: drag.predictedEndTranslation, width: width)
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                            viewModel.stepOption(step, count: count)
+                            dragOffset = 0
+                        }
+                        swipe.reset()
+                    }
+            )
         }
+        .sensoryFeedback(.selection, trigger: index)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(index == 0 ? "Current text: \(current)" : "Option \(index) of \(count): \(variants[index - 1].text)")
+        .accessibilityHint(index == 0 ? "Double-tap to type. Swipe up or down for options" : "Swipe up or down for other options; Save keeps this one")
+        .accessibilityAction { if index == 0 { isTyping = true } }
+        .accessibilityAdjustableAction { direction in
+            withAnimation(.snappy) { viewModel.stepOption(direction == .increment ? 1 : -1, count: count) }
+        }
+    }
+
+    private func page(_ text: AttributedString) -> some View {
+        ScrollView {
+            Text(text)
+                .font(.body)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 8)
+        }
+        .scrollDisabled(swipe.axis == .horizontal)
+        .padding(.horizontal)
+        .background(.background)
     }
 
     /// The option against the current text: removed words struck through and
@@ -144,10 +191,9 @@ struct RockEditorView: View {
     }
 
     @ViewBuilder
-    private var suggestionsBar: some View {
+    private func suggestionsBar(_ variants: [RockVariant]) -> some View {
         switch suggestions.state {
         case .ready:
-            let variants = variants
             if !variants.isEmpty {
                 VStack(spacing: 4) {
                     HStack {
@@ -159,14 +205,14 @@ struct RockEditorView: View {
                             withAnimation(.snappy) { viewModel.saveOption(variants.map(\.text)) }
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(!viewModel.canSaveOption)
+                        .disabled(!viewModel.canSaveOption || swipe.axis != .undecided)
                         .accessibilityHint("Keeps this option as a new revision")
                     }
                     .padding(.horizontal)
                     VariantStrip(
                         current: viewModel.rock?.text ?? viewModel.text,
                         variants: variants,
-                        selection: Binding(get: { viewModel.optionIndex }, set: { viewModel.selectOption($0, count: variants.count) })
+                        selection: Binding(get: { viewModel.optionIndex }, set: { i in withAnimation(.snappy) { viewModel.selectOption(i, count: variants.count) } })
                     )
                     .id(viewModel.rock?.text)
                 }
