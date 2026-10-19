@@ -27,29 +27,29 @@
   <line id="Baseline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1556" y2="1556"/>
   <line id="Capline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1485.54" y2="1485.54"/>
   <line id="left-margin-Ultralight-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="515.649" x2="515.649" y1="600.785" y2="720.121"/>
-  <line id="right-margin-Ultralight-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="653.078" x2="653.078" y1="600.785" y2="720.121"/>
+  <line id="right-margin-Ultralight-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="633.364" x2="633.364" y1="600.785" y2="720.121"/>
   <line id="left-margin-Regular-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1403.580" x2="1403.580" y1="600.785" y2="720.121"/>
-  <line id="right-margin-Regular-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1546.485" x2="1546.485" y1="600.785" y2="720.121"/>
+  <line id="right-margin-Regular-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1525.950" x2="1525.950" y1="600.785" y2="720.121"/>
   <line id="left-margin-Black-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="2884.570" x2="2884.570" y1="600.785" y2="720.121"/>
-  <line id="right-margin-Black-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="3032.952" x2="3032.952" y1="600.785" y2="720.121"/>
+  <line id="right-margin-Black-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="3011.594" x2="3011.594" y1="600.785" y2="720.121"/>
  </g>
  <g id="Symbols">
   <g id="Ultralight-S" transform="matrix(1 0 0 1 515.649 696)">
-   <path class="monochrome-0 multicolor-0:systemBrownColor hierarchical-0:secondary SFSymbolsPreviewWireframe" d="M134.429 -75.001 L82.053 -90.909 L74.711 -63.008 L87.193 -34.862 L71.284 -56.890 L32.859 -65.211 L3.000 -28.254 L46.076 20.450 L131.003 7.968 Z"/>
-   <path class="monochrome-1 multicolor-1:systemGrayColor hierarchical-1:primary SFSymbolsPreviewWireframe" d="M134.429 -75.001 L82.053 -90.909 L74.711 -63.008 L87.193 -34.862 L112.932 10.624 L131.003 7.968 Z"/>
+   <path class="monochrome-0 multicolor-0:systemBrownColor hierarchical-0:secondary SFSymbolsPreviewWireframe" d="M114.715 -69.035 L70.195 -82.558 L63.954 -58.841 L74.564 -34.917 L61.042 -53.641 L28.380 -60.714 L3.000 -29.300 L39.614 12.098 L111.802 1.489 Z"/>
+   <path class="monochrome-1 multicolor-1:systemGrayColor hierarchical-1:primary SFSymbolsPreviewWireframe" d="M114.715 -69.035 L70.195 -82.558 L63.954 -58.841 L74.564 -34.917 L96.442 3.746 L111.802 1.489 Z"/>
   </g>
   <g id="Regular-S" transform="matrix(1 0 0 1 1403.580 696)">
-   <path class="monochrome-0 multicolor-0:systemBrownColor hierarchical-0:secondary SFSymbolsPreviewWireframe" d="M139.905 -76.658 L85.347 -93.230 L77.699 -64.166 L90.701 -34.847 L74.130 -57.792 L34.103 -66.460 L3.000 -27.964 L47.870 22.770 L136.336 9.768 Z"/>
-   <path class="monochrome-1 multicolor-1:systemGrayColor hierarchical-1:primary SFSymbolsPreviewWireframe" d="M139.905 -76.658 L85.347 -93.230 L77.699 -64.166 L90.701 -34.847 L117.512 12.535 L136.336 9.768 Z"/>
+   <path class="monochrome-0 multicolor-0:systemBrownColor hierarchical-0:secondary SFSymbolsPreviewWireframe" d="M119.370 -70.444 L72.995 -84.529 L66.494 -59.825 L77.546 -34.904 L63.460 -54.408 L29.438 -61.776 L3.000 -29.053 L41.140 14.070 L116.336 3.019 Z"/>
+   <path class="monochrome-1 multicolor-1:systemGrayColor hierarchical-1:primary SFSymbolsPreviewWireframe" d="M119.370 -70.444 L72.995 -84.529 L66.494 -59.825 L77.546 -34.904 L100.336 5.370 L116.336 3.019 Z"/>
   </g>
   <g id="Black-S" transform="matrix(1 0 0 1 2884.570 696)">
-   <path class="monochrome-0 multicolor-0:systemBrownColor hierarchical-0:secondary SFSymbolsPreviewWireframe" d="M145.382 -78.315 L88.641 -95.549 L80.687 -65.323 L94.209 -34.832 L76.975 -58.695 L35.347 -67.709 L3.000 -27.673 L49.665 25.090 L141.670 11.568 Z"/>
-   <path class="monochrome-1 multicolor-1:systemGrayColor hierarchical-1:primary SFSymbolsPreviewWireframe" d="M145.382 -78.315 L88.641 -95.549 L80.687 -65.323 L94.209 -34.832 L122.093 14.446 L141.670 11.568 Z"/>
+   <path class="monochrome-0 multicolor-0:systemBrownColor hierarchical-0:secondary SFSymbolsPreviewWireframe" d="M124.024 -71.852 L75.795 -86.501 L69.034 -60.809 L80.528 -34.891 L65.879 -55.175 L30.495 -62.838 L3.000 -28.806 L42.665 16.042 L120.869 4.549 Z"/>
+   <path class="monochrome-1 multicolor-1:systemGrayColor hierarchical-1:primary SFSymbolsPreviewWireframe" d="M124.024 -71.852 L75.795 -86.501 L69.034 -60.809 L80.528 -34.891 L104.229 6.994 L120.869 4.549 Z"/>
   </g>
  </g>
  <g id="Anchors">
-  <circle id="Ultralight-S-rotate-anchor" style="fill:#FFCC00;opacity:1.0;" r="1" cx="584.364" cy="660.770"/>
-  <circle id="Regular-S-rotate-anchor" style="fill:#FFCC00;opacity:1.0;" r="1" cx="1475.033" cy="660.770"/>
-  <circle id="Black-S-rotate-anchor" style="fill:#FFCC00;opacity:1.0;" r="1" cx="2958.761" cy="660.770"/>
+  <circle id="Ultralight-S-rotate-anchor" style="fill:#FFCC00;opacity:1.0;" r="1" cx="574.506" cy="660.770"/>
+  <circle id="Regular-S-rotate-anchor" style="fill:#FFCC00;opacity:1.0;" r="1" cx="1464.765" cy="660.770"/>
+  <circle id="Black-S-rotate-anchor" style="fill:#FFCC00;opacity:1.0;" r="1" cx="2948.082" cy="660.770"/>
  </g>
 </svg>

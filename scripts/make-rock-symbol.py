@@ -29,7 +29,7 @@ CRACK_END = (NOTCH[0] + dx * s, NOTCH[1] + dy * s)
 FRONT = [(766, 349), (552, 284), (522, 398), NOTCH, CRACK_END, (752, 688)]
 
 CAP = 70.459          # cap height (baseline 696, capline 625.541)
-H = 116.0             # matches the visual weight of circle symbols in a tab bar
+H = 98.6              # 0.85 of the tab-bar size that matched circle symbols (116)
 xs, ys = [v[0] for v in V], [v[1] for v in V]
 k = H / (max(ys) - min(ys))
 cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
