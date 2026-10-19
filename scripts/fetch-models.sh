@@ -5,15 +5,12 @@
 set -eu
 cd "$(dirname "$0")/.."
 DEST=Models
-FILES="lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin"
-# Optional: the sense head (models v0.1.3+); the engine uses it when present.
-OPTIONAL="usage/head/senses.safetensors usage/head/senses.json"
+FILES="lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json"
 
 if [ "${1:-}" = "--from" ]; then
   SRC=${2:?usage: fetch-models.sh --from <models-dir>}
-  rm -rf "$DEST" && mkdir -p "$DEST/usage"
+  rm -rf "$DEST" && mkdir -p "$DEST/usage/head"
   for f in $FILES; do cp "$SRC/$f" "$DEST/$f"; done
-  for f in $OPTIONAL; do [ -f "$SRC/$f" ] && mkdir -p "$DEST/$(dirname "$f")" && cp "$SRC/$f" "$DEST/$f"; done
   echo "local" > "$DEST/.version"
   echo "Copied models from $SRC"
   exit 0

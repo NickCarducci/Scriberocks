@@ -209,6 +209,8 @@
 				"$(SRCROOT)/Models/usage/usage.safetensors",
 				"$(SRCROOT)/Models/usage/usage.json",
 				"$(SRCROOT)/Models/usage/senses.bin",
+				"$(SRCROOT)/Models/usage/head/senses.safetensors",
+				"$(SRCROOT)/Models/usage/head/senses.json",
 			);
 			name = "Bundle language models";
 			outputFileListPaths = (
@@ -223,10 +225,12 @@
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/usage/usage.safetensors",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/usage/usage.json",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/usage/senses.bin",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/usage/head/senses.safetensors",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/usage/head/senses.json",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\nsrc=\"$SRCROOT/Models\"\ndst=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Models\"\nmissing=\"\"\nfor f in lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin; do\n  [ -f \"$src/$f\" ] || missing=\"$missing $f\"\ndone\nif [ -n \"$missing\" ]; then\n  msg=\"language models missing from Models/ ($missing) - run scripts/fetch-models.sh (or --from ../../core/models)\"\n  if [ \"$CONFIGURATION\" = \"Release\" ]; then echo \"error: $msg\"; exit 1; fi\n  echo \"warning: $msg - suggestions will be unavailable in this build\"\n  exit 0\nfi\nmkdir -p \"$dst/usage\"\nfor f in lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin; do cp \"$src/$f\" \"$dst/$f\"; done\nif [ -f \"$src/usage/head/senses.json\" ]; then\n  mkdir -p \"$dst/usage/head\"\n  cp \"$src/usage/head/senses.safetensors\" \"$src/usage/head/senses.json\" \"$dst/usage/head/\"\nfi\n";
+			shellScript = "set -e\nsrc=\"$SRCROOT/Models\"\ndst=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Models\"\nmissing=\"\"\nfor f in lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json; do\n  [ -f \"$src/$f\" ] || missing=\"$missing $f\"\ndone\nif [ -n \"$missing\" ]; then\n  msg=\"language models missing from Models/ ($missing) - run scripts/fetch-models.sh (or --from ../../core/models)\"\n  if [ \"$CONFIGURATION\" = \"Release\" ]; then echo \"error: $msg\"; exit 1; fi\n  echo \"warning: $msg - suggestions will be unavailable in this build\"\n  exit 0\nfi\nmkdir -p \"$dst/usage/head\"\nfor f in lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json; do cp \"$src/$f\" \"$dst/$f\"; done\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
