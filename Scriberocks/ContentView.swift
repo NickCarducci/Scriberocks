@@ -40,6 +40,11 @@ struct ContentView: View {
             }
         }
         #if DEBUG
+        .overlay {
+            if ProcessInfo.processInfo.arguments.contains("-symbolGallery") {
+                SymbolGallery().frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).background(.background)
+            }
+        }
         .onAppear {
             // Screenshot/QA hook: `-openNewestRock` opens the newest rock in the editor.
             if ProcessInfo.processInfo.arguments.contains("-openNewestRock"), let rock = rockStore.rocks.first {
