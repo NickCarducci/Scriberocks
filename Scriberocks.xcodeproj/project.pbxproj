@@ -383,12 +383,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Scriberocks/Scriberocks.entitlements;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_ASSET_PATHS = "\"Scriberocks/Preview Content\"";
 				DEVELOPMENT_TEAM = 7279TDDFK4;
 				ENABLE_PREVIEWS = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Scriberocks;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -420,12 +420,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Scriberocks/Scriberocks.entitlements;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_ASSET_PATHS = "\"Scriberocks/Preview Content\"";
 				DEVELOPMENT_TEAM = 7279TDDFK4;
 				ENABLE_PREVIEWS = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Scriberocks;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -526,20 +526,20 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		A3B100202F9A000100798A70 /* XCRemoteSwiftPackageReference "scriberocks-backend" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/NickCarducci/scriberocks-backend";
-			requirement = {
-				kind = upToNextMinorVersion;
-				minimumVersion = 0.1.0;
-			};
-		};
 		A3762E4C2F2DC4B900798A70 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 13.0.1;
+			};
+		};
+		A3B100202F9A000100798A70 /* XCRemoteSwiftPackageReference "scriberocks-backend" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/NickCarducci/scriberocks-backend";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.1.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
