@@ -9,6 +9,7 @@ final class ProfileViewModel: ObservableObject {
 
     private let appleAuth: AppleAuthService
     private let rockSync: RockSyncService
+    private let groups: GroupService
     let authState: UserAuthState
     let store: RockStore
     let childSafety: ChildSafetyManager
@@ -17,6 +18,7 @@ final class ProfileViewModel: ObservableObject {
     init(container: AppContainer, authState: UserAuthState, store: RockStore, childSafety: ChildSafetyManager) {
         appleAuth = container.appleAuthService
         rockSync = container.rockSyncService
+        groups = container.groupService
         self.authState = authState
         self.store = store
         self.childSafety = childSafety
@@ -91,7 +93,9 @@ final class ProfileViewModel: ObservableObject {
         isWorking = true
         defer { isWorking = false }
         do {
-            try await appleAuth.deleteAccount { [rockSync] uid in
+            try await appleAuth.deleteAccount { [rockSync, groups] uid in
+                // Group posts, memberships and blocks first: the rocks step removes the user document.
+                try await groups.deleteAllData(userId: uid)
                 try await rockSync.deleteAllData(userId: uid)
             }
             childSafety.reset()

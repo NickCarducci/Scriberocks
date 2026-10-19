@@ -6,7 +6,7 @@
 import SwiftUI
 
 enum AppTab: Hashable {
-    case write, rocks, profile
+    case write, rocks, groups, profile
 }
 
 struct ContentView: View {
@@ -30,6 +30,19 @@ struct ContentView: View {
             Tab("Rocks", image: "rock", value: .rocks) {
                 RocksListView(store: rockStore, path: $rocksPath)
             }
+            Tab("Groups", systemImage: "person.3", value: .groups) {
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("-demoGroups") {
+                    GroupsView(service: InMemoryGroupService.demo, userId: "demo", displayName: "You")
+                } else {
+                    GroupsView(service: container.groupService, userId: authState.userId, displayName: authState.displayName)
+                        .id(authState.userId)
+                }
+                #else
+                GroupsView(service: container.groupService, userId: authState.userId, displayName: authState.displayName)
+                    .id(authState.userId)
+                #endif
+            }
             Tab("Profile", systemImage: "person.crop.circle", value: .profile) {
                 ProfileView(
                     container: container,
@@ -47,6 +60,7 @@ struct ContentView: View {
         }
         .onAppear {
             // Screenshot/QA hook: `-openNewestRock` opens the newest rock in the editor.
+            if ProcessInfo.processInfo.arguments.contains("-openGroups") { selection = .groups }
             if ProcessInfo.processInfo.arguments.contains("-openNewestRock"), let rock = rockStore.rocks.first {
                 selection = .rocks
                 rocksPath = [rock.id]
@@ -77,3 +91,21 @@ extension RockStore {
         return store
     }
 }
+
+#if DEBUG
+extension InMemoryGroupService {
+    /// Screenshot/QA data for `-demoGroups`.
+    static let demo: InMemoryGroupService = {
+        let s = InMemoryGroupService()
+        s.seedGroup(RockGroup(id: "commons", name: "Commons", about: "Share a rock with everyone.", reportsToHide: 2))
+        s.seedGroup(RockGroup(id: "young", name: "Young Writers", about: "For writers under 18, with a guardian's OK.", reportsToHide: 1))
+        Task {
+            try? await s.join(groupId: "commons", userId: "demo", displayName: "You", guardianApproved: false)
+            try? await s.acceptTerms(version: CommunityTerms.version, userId: "demo")
+        }
+        s.seed(GroupPost(id: "1", groupId: "commons", authorId: "ana", authorName: "Ana", text: "The river was loud, so we walked the long way home.", createdAt: .now.addingTimeInterval(-3600), reportedBy: [], review: nil))
+        s.seed(GroupPost(id: "2", groupId: "commons", authorId: "demo", authorName: "You", text: "First rock in the Commons.", createdAt: .now.addingTimeInterval(-600), reportedBy: ["x", "y"], review: nil))
+        return s
+    }()
+}
+#endif

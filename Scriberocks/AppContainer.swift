@@ -6,14 +6,17 @@ final class AppContainer: ObservableObject {
     let authService: AppAuthService
     let appleAuthService: AppleAuthService
     let rockSyncService: RockSyncService
+    let groupService: GroupService
 
     init(
         authService: AppAuthService = FirebaseAuthService(),
         appleAuthService: AppleAuthService = AppleAuthService(),
-        rockSyncService: RockSyncService = FirestoreRockSyncService()
+        rockSyncService: RockSyncService = FirestoreRockSyncService(),
+        groupService: GroupService = FirestoreGroupService()
     ) {
         self.authService = authService
         self.appleAuthService = appleAuthService
         self.rockSyncService = rockSyncService
+        self.groupService = groupService
     }
 }
