@@ -1,23 +1,32 @@
 import SwiftUI
 import ScribeCore
 
-/// A free-scrolling (no snapping) strip of suggestions. The card nearest the
-/// center is emphasized and ticks as it changes; tap a card to accept it.
+/// A free-scrolling (no snapping) strip of options: the current text first,
+/// then the suggestions. The card nearest the center is the selection (it
+/// previews inline in the editor) and ticks as it changes; tap a card to
+/// center it. Nothing is applied until Save.
 struct VariantStrip: View {
+    let current: String
     let variants: [RockVariant]
-    let onAccept: (RockVariant) -> Void
+    /// 0 = the current text, 1...n = `variants[selection - 1]`.
+    @Binding var selection: Int
 
-    @State private var centered: String?
+    @State private var centered: Int?
 
     var body: some View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 12) {
-                ForEach(variants, id: \.text) { variant in
-                    Button { onAccept(variant) } label: {
-                        VariantCard(variant: variant, isCentered: centered == variant.text)
+                Button { select(0) } label: {
+                    OptionCard(text: AttributedString(current), caption: "Current", isCentered: centered == 0)
+                }
+                .buttonStyle(.plain)
+                .id(0)
+                ForEach(Array(variants.enumerated()), id: \.element.text) { i, variant in
+                    Button { select(i + 1) } label: {
+                        OptionCard(text: variant.highlighted(font: .callout), caption: variant.ops.joined(separator: " · "), isCentered: centered == i + 1)
                     }
                     .buttonStyle(.plain)
-                    .id(variant.text)
+                    .id(i + 1)
                 }
             }
             .scrollTargetLayout()
@@ -27,22 +36,33 @@ struct VariantStrip: View {
         .scrollPosition(id: $centered, anchor: .center)
         .sensoryFeedback(.selection, trigger: centered)
         .frame(height: 132)
-        .onAppear { centered = variants.first?.text }
+        .onAppear { centered = selection }
+        .onChange(of: centered) { _, new in
+            if let new, new != selection { selection = new }
+        }
+        .onChange(of: selection) { _, new in
+            if new != centered { withAnimation(.snappy) { centered = new } }
+        }
         .accessibilityLabel("Suggestions")
+    }
+
+    private func select(_ index: Int) {
+        withAnimation(.snappy) { centered = index }
     }
 }
 
-private struct VariantCard: View {
-    let variant: RockVariant
+private struct OptionCard: View {
+    let text: AttributedString
+    let caption: String
     let isCentered: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(highlighted)
+            Text(text)
                 .font(.callout)
                 .lineLimit(4)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            Text(variant.ops.joined(separator: " · "))
+            Text(caption)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -56,16 +76,18 @@ private struct VariantCard: View {
         .scaleEffect(isCentered ? 1 : 0.96)
         .animation(.snappy(duration: 0.15), value: isCentered)
     }
+}
 
-    /// Changed words in the accent color.
-    private var highlighted: AttributedString {
-        var text = AttributedString(variant.text)
-        for range in variant.changedRanges {
-            guard let lower = AttributedString.Index(range.lowerBound, within: text),
-                  let upper = AttributedString.Index(range.upperBound, within: text) else { continue }
-            text[lower..<upper].foregroundColor = .accentColor
-            text[lower..<upper].font = .callout.weight(.semibold)
+extension RockVariant {
+    /// The text with changed words in the accent color.
+    func highlighted(font: Font) -> AttributedString {
+        var out = AttributedString(text)
+        for range in changedRanges {
+            guard let lower = AttributedString.Index(range.lowerBound, within: out),
+                  let upper = AttributedString.Index(range.upperBound, within: out) else { continue }
+            out[lower..<upper].foregroundColor = .accentColor
+            out[lower..<upper].font = font.weight(.semibold)
         }
-        return text
+        return out
     }
 }

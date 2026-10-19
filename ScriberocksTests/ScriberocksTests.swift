@@ -183,3 +183,91 @@ struct AgeBracketTests {
         #expect(AppleAuthService.sha256(nonce).count == 64)
     }
 }
+
+/// Inline suggestions: option 0 is the current text; 1...n are the engine's
+/// variants. Swiping only previews; Save makes the previewed option a revision.
+@MainActor
+struct InlineOptionTests {
+    private func editor(_ text: String) throws -> (RockEditorViewModel, RockStore) {
+        let url = FileManager.default.temporaryDirectory.appending(path: "rocks-\(UUID()).json")
+        let store = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: UserDefaults(suiteName: "opt-\(UUID())")!)
+        let rock = try #require(store.add(text: text))
+        return (RockEditorViewModel(rockID: rock.id, store: store), store)
+    }
+
+    @Test func swipingPreviewsWithoutChangingTheRock() throws {
+        let (vm, store) = try editor("the rough draft")
+        #expect(vm.optionIndex == 0 && !vm.canSaveOption)
+        vm.stepOption(1, count: 3)
+        vm.stepOption(1, count: 3)
+        #expect(vm.optionIndex == 2 && vm.canSaveOption)
+        #expect(store.rocks.first?.revisions.count == 1)
+    }
+
+    @Test func steppingStaysWithinTheOptions() throws {
+        let (vm, _) = try editor("draft")
+        vm.stepOption(-1, count: 2)
+        #expect(vm.optionIndex == 0)
+        vm.selectOption(5, count: 2)
+        #expect(vm.optionIndex == 2)
+        vm.stepOption(1, count: 2)
+        #expect(vm.optionIndex == 2)
+    }
+
+    @Test func saveMakesThePreviewedOptionARevision() throws {
+        let (vm, store) = try editor("the rough draft")
+        vm.selectOption(2, count: 2)
+        vm.saveOption(["a rough draft", "the draft"])
+        let rock = try #require(store.rocks.first)
+        #expect(rock.text == "the draft")
+        #expect(rock.revisions.map(\.source) == [.written, .suggestion])
+        #expect(vm.text == "the draft" && vm.optionIndex == 0)
+    }
+
+    @Test func savingTheCurrentTextDoesNothing() throws {
+        let (vm, store) = try editor("draft")
+        vm.saveOption(["other draft"])
+        #expect(store.rocks.first?.revisions.count == 1)
+    }
+
+    @Test func movingThroughHistoryReturnsToTheCurrentText() throws {
+        let (vm, _) = try editor("one")
+        vm.text = "two"
+        vm.commit()
+        vm.selectOption(1, count: 1)
+        vm.goBack()
+        #expect(vm.optionIndex == 0 && vm.text == "one")
+    }
+}
+
+/// Word-level comparison for the inline preview: what an option keeps,
+/// removes and adds relative to the current text.
+struct InlineDiffTests {
+    private func render(_ parts: [InlineDiff.Part]) -> String {
+        parts.map { p in
+            switch p.kind {
+            case .kept: p.text
+            case .removed: "[-\(p.text)]"
+            case .added: "[+\(p.text)]"
+            }
+        }.joined(separator: " ")
+    }
+
+    @Test func aCutShowsTheRemovedWords() {
+        let parts = InlineDiff.parts(from: "the river was loud and the evening was warm.", to: "the river was loud.")
+        #expect(render(parts) == "the river was loud [-and] [-the] [-evening] [-was] [-warm] .")
+    }
+
+    @Test func aSwapShowsRemovedThenAdded() {
+        let parts = InlineDiff.parts(from: "a big dog", to: "a large dog")
+        #expect(render(parts) == "a [-big] [+large] dog")
+    }
+
+    @Test func identicalTextIsAllKept() {
+        #expect(InlineDiff.parts(from: "same words", to: "same words").allSatisfy { $0.kind == .kept })
+    }
+
+    @Test func punctuationAttachesWithoutASpace() {
+        #expect(InlineDiff.joined(["Well", ",", "it", "is", "(", "fine", ")", "."]) == "Well, it is (fine).")
+    }
+}

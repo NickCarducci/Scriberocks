@@ -10,6 +10,9 @@ final class RockEditorViewModel: ObservableObject {
         }
     }
     @Published private(set) var isDeleted = false
+    /// Inline suggestions: 0 is the current text, 1...n the engine's options.
+    /// Swiping only previews; `saveOption` makes the previewed one a revision.
+    @Published private(set) var optionIndex = 0
 
     let rockID: Rock.ID
     let store: RockStore
@@ -49,6 +52,26 @@ final class RockEditorViewModel: ObservableObject {
         guard let rock else { return }
         store.showRevision(rockID, index: rock.revisionIndex + delta)
         text = self.rock?.text ?? text
+        optionIndex = 0
+    }
+
+    // MARK: - Inline options
+
+    var canSaveOption: Bool { optionIndex > 0 }
+
+    /// Previews option `index` (clamped to 0...count).
+    func selectOption(_ index: Int, count: Int) {
+        optionIndex = min(max(index, 0), max(count, 0))
+    }
+
+    func stepOption(_ delta: Int, count: Int) {
+        selectOption(optionIndex + delta, count: count)
+    }
+
+    /// Saves the previewed option (`options[optionIndex - 1]`) as a revision.
+    func saveOption(_ options: [String]) {
+        guard canSaveOption, options.indices.contains(optionIndex - 1) else { return }
+        accept(suggestion: options[optionIndex - 1])
     }
 
     // MARK: - Changes
@@ -64,6 +87,7 @@ final class RockEditorViewModel: ObservableObject {
         commit()
         store.revise(rockID, to: suggestion, source: .suggestion)
         text = rock?.text ?? suggestion
+        optionIndex = 0
     }
 
     func delete() {
