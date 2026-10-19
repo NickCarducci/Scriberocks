@@ -35,7 +35,7 @@ struct RockEditorView: View {
                     }
                 }
             } else {
-                ContentUnavailableView("Rock not found", systemImage: "fossil.shell")
+                ContentUnavailableView("Rock not found", image: "rock")
             }
         }
         .navigationTitle(viewModel.createdAt?.formatted(date: .abbreviated, time: .omitted) ?? "")

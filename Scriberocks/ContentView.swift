@@ -27,7 +27,7 @@ struct ContentView: View {
                     selection = .rocks
                 }
             }
-            Tab("Rocks", systemImage: "fossil.shell", value: .rocks) {
+            Tab("Rocks", image: "rock", value: .rocks) {
                 RocksListView(store: rockStore, path: $rocksPath)
             }
             Tab("Profile", systemImage: "person.crop.circle", value: .profile) {

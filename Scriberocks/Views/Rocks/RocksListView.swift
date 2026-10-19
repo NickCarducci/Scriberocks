@@ -15,7 +15,7 @@ struct RocksListView: View {
                 if viewModel.isEmpty {
                     ContentUnavailableView(
                         "No rocks yet",
-                        systemImage: "fossil.shell",
+                        image: "rock",
                         description: Text("Write something on the Write tab and it'll land here.")
                     )
                 } else {
@@ -58,8 +58,11 @@ struct RocksListView: View {
                     Button {
                         viewModel.toggleDiamond(rock)
                     } label: {
-                        Label(rock.isDiamond ? "Back to rock" : "Diamond",
-                              systemImage: rock.isDiamond ? "fossil.shell" : "diamond")
+                        if rock.isDiamond {
+                            Label("Back to rock", image: "rock")
+                        } else {
+                            Label("Diamond", systemImage: "diamond")
+                        }
                     }
                     .tint(.accentColor)
                 }
