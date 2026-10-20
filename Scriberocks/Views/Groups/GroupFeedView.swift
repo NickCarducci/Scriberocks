@@ -9,15 +9,17 @@ struct GroupFeedView: View {
     @EnvironmentObject private var rockStore: RockStore
     @State private var askingGuardian = false
     @State private var askingToPost = false
-    @EnvironmentObject private var childSafety: ChildSafetyManager
     @State private var choosingRock = false
     @State private var showingTerms = false
     @State private var pendingText: String?
     @State private var notice: String?
     @State private var reporting: GroupPost?
 
+    private let recordPostingApproval: (PostingApproval.Method) async -> Void
+
     init(group: RockGroup, service: GroupService, userId: String?, displayName: String?, requiresGuardianApproval: Bool,
-         postingApproved: @escaping () -> Bool) {
+         postingApproved: @escaping () -> Bool, recordPostingApproval: @escaping (PostingApproval.Method) async -> Void) {
+        self.recordPostingApproval = recordPostingApproval
         _viewModel = StateObject(wrappedValue: GroupFeedViewModel(
             group: group, service: service, userId: userId, displayName: displayName,
             requiresGuardianApproval: requiresGuardianApproval,
@@ -70,10 +72,12 @@ struct GroupFeedView: View {
             }
         }
         .sheet(isPresented: $askingToPost) {
-            AskToPostView {
-                childSafety.markPostingApproved()
+            AskToPostView { method in
                 askingToPost = false
-                if let text = pendingText { Task { await share(text) } }
+                Task {
+                    await recordPostingApproval(method)
+                    if let text = pendingText { await share(text) }
+                }
             }
             .presentationDetents([.medium, .large])
         }
@@ -221,7 +225,7 @@ private struct TermsView: View {
 /// Asks a parent or guardian once to allow posting to groups: in Messages, or
 /// (iOS 27) in person on this device.
 private struct AskToPostView: View {
-    let approved: () -> Void
+    let approved: (PostingApproval.Method) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var working = false
     @State private var note: String?
@@ -253,7 +257,7 @@ private struct AskToPostView: View {
         working = true
         defer { working = false }
         switch await PostingApproval.ask(inPerson: inPerson) {
-        case .approved: approved()
+        case .approved(let method): approved(method)
         case .sent: note = "Request sent. You can share once they approve."
         case .denied: note = "Not approved this time."
         case .cancelled: break

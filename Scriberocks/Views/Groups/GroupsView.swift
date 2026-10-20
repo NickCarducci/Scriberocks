@@ -30,7 +30,11 @@ struct GroupsView: View {
             .navigationDestination(for: RockGroup.self) { group in
                 GroupFeedView(group: group, service: service, userId: viewModel.userId, displayName: viewModel.displayName,
                               requiresGuardianApproval: requiresGuardianApproval,
-                              postingApproved: { [childSafety] in childSafety.postingApproved })
+                              postingApproved: { [childSafety] in childSafety.postingApproved },
+                              recordPostingApproval: { method in
+                                  childSafety.markPostingApproved()
+                                  await viewModel.recordPostingApproval(method: method)
+                              })
             }
         }
         .task {
@@ -44,9 +48,18 @@ struct GroupsView: View {
             #endif
         }
         .task {
+            // The approval lives with the account: load it, and record whether a
+            // guardian control applies (the rules require approval then).
+            if await viewModel.syncPostingApproval(requiresGuardianApproval: requiresGuardianApproval,
+                                                   locallyApproved: childSafety.postingApproved) {
+                childSafety.markPostingApproved()
+            }
+        }
+        .task {
             // A guardian's answer to "Ask to post" (sent in Messages) can arrive any time.
             for await approved in PostingApproval.answers() where approved {
                 childSafety.markPostingApproved()
+                await viewModel.recordPostingApproval(method: .ask)
             }
         }
         .alert("Groups", isPresented: Binding(get: { notice != nil || viewModel.errorMessage != nil }, set: { if !$0 { notice = nil; viewModel.errorMessage = nil } })) {

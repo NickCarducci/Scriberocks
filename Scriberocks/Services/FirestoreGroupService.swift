@@ -6,7 +6,8 @@ import FirebaseFirestore
 ///   scriberocks_groups/{groupId}/members/{uid}    displayName, joinedAt, guardianApproved
 ///   scriberocks_groups/{groupId}/posts/{postId}   authorId, authorName, text, createdAt, reportedBy, review
 ///   scriberocks_reports/{reportId}                groupId, postId, postText, authorId, reporterId, reason, createdAt
-///   scriberocks_users/{uid}                       termsVersion
+///   scriberocks_users/{uid}                       termsVersion, postingApproved, postingApprovedMethod,
+///                                                 postingApprovedAt, guardianControls
 ///   scriberocks_users/{uid}/blocks/{blockedUid}   createdAt
 /// A Cloud Function emails each new report to the moderator.
 final class FirestoreGroupService: GroupService {
@@ -89,6 +90,21 @@ final class FirestoreGroupService: GroupService {
 
     func acceptTerms(version: Int, userId: String) async throws {
         try await user(userId).setData(["termsVersion": version, "termsAcceptedAt": FieldValue.serverTimestamp()], merge: true)
+    }
+
+    func postingRecord(userId: String) async throws -> PostingRecord? {
+        guard let d = try await user(userId).getDocument().data() else { return nil }
+        return PostingRecord(approved: d["postingApproved"] as? Bool ?? false, guardianControls: d["guardianControls"] as? Bool ?? false)
+    }
+
+    func recordPostingApproval(userId: String, method: PostingApproval.Method) async throws {
+        try await user(userId).setData([
+            "postingApproved": true, "postingApprovedMethod": method.rawValue, "postingApprovedAt": FieldValue.serverTimestamp(),
+        ], merge: true)
+    }
+
+    func setGuardianControls(userId: String, _ on: Bool) async throws {
+        try await user(userId).setData(["guardianControls": on], merge: true)
     }
 
     func deleteAllData(userId: String) async throws {

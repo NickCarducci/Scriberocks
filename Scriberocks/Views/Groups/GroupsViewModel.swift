@@ -39,6 +39,35 @@ final class GroupsViewModel: ObservableObject {
         }
     }
 
+    /// At sign-in: tell the account whether a guardian control applies (so the
+    /// rules can require approval), carry an approval made on this device
+    /// before approvals were stored with the account, and return whether
+    /// posting is approved for this account on any device.
+    func syncPostingApproval(requiresGuardianApproval: Bool, locallyApproved: Bool) async -> Bool {
+        guard let userId else { return locallyApproved }
+        do {
+            if requiresGuardianApproval { try await service.setGuardianControls(userId: userId, true) }
+            if try await service.postingRecord(userId: userId)?.approved == true { return true }
+            if locallyApproved {
+                try await service.recordPostingApproval(userId: userId, method: .ask)
+                return true
+            }
+            return false
+        } catch {
+            errorMessage = error.localizedDescription
+            return locallyApproved
+        }
+    }
+
+    func recordPostingApproval(method: PostingApproval.Method) async {
+        guard let userId else { return }
+        do {
+            try await service.recordPostingApproval(userId: userId, method: method)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func join(_ group: RockGroup) async -> JoinOutcome {
         guard let userId else { return .needsSignIn }
         do {

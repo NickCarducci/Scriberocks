@@ -7,16 +7,24 @@ import UIKit
 /// Messages, or (iOS 27) approved in person on this device. Reading stays per
 /// author (GuardianApproval). Same model as Populist.
 ///
-/// Limits: the approval is kept on this device; Firestore rules can't check
-/// it (the server never learns a member's age), so it's a client-side gate.
+/// The approval is stored with the account (scriberocks_users/{uid}:
+/// postingApproved, plus guardianControls so the rules can require it).
+/// Both are reported by the app: Apple gives no server-side proof.
 @MainActor
 enum PostingApproval {
     /// Shown to the guardian; keep it accurate (nothing else checks it).
     nonisolated static let description = "Allow sharing writing to Scriberocks groups. Posts are visible to other members, and anyone can report or block."
 
+    nonisolated enum Method: String, Sendable {
+        case ask
+        case inPerson = "in_person"
+        /// Communication Limits isn't on: no guardian step applies.
+        case notRequired = "not_required"
+    }
+
     enum Outcome: Equatable {
         /// Approved now (in person), or no guardian controls apply.
-        case approved
+        case approved(Method)
         /// Sent in Messages; the answer arrives later (answers()).
         case sent
         case denied
@@ -40,7 +48,7 @@ enum PostingApproval {
                 switch try await AskCenter.shared.askSignificantChangePermission(
                     for: question, permissionFlow: inPerson ? .approveInPerson : .askToApprove, in: presenter) {
                 case .askToApprove(let didSend): return didSend ? .sent : .cancelled
-                case .approveInPerson(let approved): return approved ? .approved : .denied
+                case .approveInPerson(let approved): return approved ? .approved(.inPerson) : .denied
                 case .cancel: return .cancelled
                 @unknown default: return .cancelled
                 }
@@ -48,7 +56,7 @@ enum PostingApproval {
             try await AskCenter.shared.ask(question, in: presenter)
             return .sent
         } catch let error as AskError {
-            if case .communicationLimitsNotEnabled = error { return .approved }
+            if case .communicationLimitsNotEnabled = error { return .approved(.notRequired) }
             return .unavailable(error.localizedDescription)
         } catch {
             return .unavailable(error.localizedDescription)

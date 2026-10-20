@@ -18,6 +18,13 @@ nonisolated enum CommunityTerms {
         """
 }
 
+/// What the account holds about posting approval.
+nonisolated struct PostingRecord: Equatable, Sendable {
+    var approved: Bool
+    /// A guardian control applies to this member (minor or Communication Limits).
+    var guardianControls: Bool
+}
+
 /// Groups (forums), their posts, and the moderation records behind them.
 protocol GroupService: AnyObject {
     func groups() async throws -> [RockGroup]
@@ -33,6 +40,9 @@ protocol GroupService: AnyObject {
     func block(_ authorId: String, by userId: String) async throws
     func acceptedTermsVersion(userId: String) async throws -> Int?
     func acceptTerms(version: Int, userId: String) async throws
+    func postingRecord(userId: String) async throws -> PostingRecord?
+    func recordPostingApproval(userId: String, method: PostingApproval.Method) async throws
+    func setGuardianControls(userId: String, _ on: Bool) async throws
     /// Removes the user's posts, memberships, blocks and terms record (account deletion).
     func deleteAllData(userId: String) async throws
 }
@@ -46,6 +56,7 @@ final class InMemoryGroupService: GroupService {
     private var groupList: [RockGroup] = []
     private var blocks: [String: Set<String>] = [:]
     private var terms: [String: Int] = [:]
+    private(set) var postingRecords: [String: PostingRecord] = [:]
 
     func seed(_ post: GroupPost) { allPosts.append(post) }
     func seedGroup(_ group: RockGroup) { groupList.append(group) }
@@ -74,10 +85,18 @@ final class InMemoryGroupService: GroupService {
     func block(_ authorId: String, by userId: String) async throws { blocks[userId, default: []].insert(authorId) }
     func acceptedTermsVersion(userId: String) async throws -> Int? { terms[userId] }
     func acceptTerms(version: Int, userId: String) async throws { terms[userId] = version }
+    func postingRecord(userId: String) async throws -> PostingRecord? { postingRecords[userId] }
+    func recordPostingApproval(userId: String, method: PostingApproval.Method) async throws {
+        postingRecords[userId, default: PostingRecord(approved: false, guardianControls: false)].approved = true
+    }
+    func setGuardianControls(userId: String, _ on: Bool) async throws {
+        postingRecords[userId, default: PostingRecord(approved: false, guardianControls: false)].guardianControls = on
+    }
     func deleteAllData(userId: String) async throws {
         allPosts.removeAll { $0.authorId == userId }
         for g in members.keys { members[g]?[userId] = nil }
         blocks[userId] = nil
         terms[userId] = nil
+        postingRecords[userId] = nil
     }
 }

@@ -282,3 +282,39 @@ struct PostingApprovalGateTests {
         #expect(PostingApproval.description.contains("groups"))
     }
 }
+
+/// The posting approval lives with the account (Firestore), so it follows the
+/// member across devices and reinstalls; the guardian-controls flag lets the
+/// rules require it.
+@MainActor
+struct PostingApprovalSyncTests {
+    @Test func anApprovalRecordedOnOneDeviceIsFoundOnAnother() async {
+        let service = InMemoryGroupService()
+        let phone = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
+        await phone.recordPostingApproval(method: .inPerson)
+        let tablet = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
+        #expect(await tablet.syncPostingApproval(requiresGuardianApproval: true, locallyApproved: false) == true)
+    }
+
+    @Test func syncRecordsWhetherGuardianControlsApply() async {
+        let service = InMemoryGroupService()
+        let vm = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
+        #expect(await vm.syncPostingApproval(requiresGuardianApproval: true, locallyApproved: false) == false)
+        #expect(service.postingRecords["kid"]?.guardianControls == true)
+    }
+
+    @Test func aLocalApprovalFromBeforeIsCarriedToTheAccount() async {
+        let service = InMemoryGroupService()
+        let vm = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
+        #expect(await vm.syncPostingApproval(requiresGuardianApproval: true, locallyApproved: true) == true)
+        #expect(service.postingRecords["kid"]?.approved == true)
+    }
+
+    @Test func accountDeletionRemovesIt() async throws {
+        let service = InMemoryGroupService()
+        let vm = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
+        await vm.recordPostingApproval(method: .ask)
+        try await service.deleteAllData(userId: "kid")
+        #expect(service.postingRecords["kid"] == nil)
+    }
+}
