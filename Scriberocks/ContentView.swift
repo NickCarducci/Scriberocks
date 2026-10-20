@@ -104,7 +104,7 @@ extension InMemoryGroupService {
     static let demo: InMemoryGroupService = {
         let s = InMemoryGroupService()
         s.seedGroup(RockGroup(id: "commons", name: "Commons", about: "Share a rock with everyone.", reportsToHide: 2))
-        s.seedGroup(RockGroup(id: "young", name: "Young Writers", about: "For writers under 18, with a guardian's OK.", reportsToHide: 1))
+        s.seedGroup(RockGroup(id: "young", name: "Young Writers", about: "For writers under 18, with a guardian's OK.", reportsToHide: 1, minorsOnly: true))
         Task {
             try? await s.join(groupId: "commons", userId: "demo", displayName: "You", guardianApproved: false)
             try? await s.acceptTerms(version: CommunityTerms.version, userId: "demo")

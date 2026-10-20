@@ -23,6 +23,8 @@ nonisolated struct PostingRecord: Equatable, Sendable {
     var approved: Bool
     /// A guardian control applies to this member (minor or Communication Limits).
     var guardianControls: Bool
+    /// The member is under 18 (latest Declared Age Range answer); minors-only groups require it.
+    var isMinor: Bool = false
 }
 
 /// Groups (forums), their posts, and the moderation records behind them.
@@ -43,6 +45,7 @@ protocol GroupService: AnyObject {
     func postingRecord(userId: String) async throws -> PostingRecord?
     func recordPostingApproval(userId: String, method: PostingApproval.Method) async throws
     func setGuardianControls(userId: String, _ on: Bool) async throws
+    func setMinor(userId: String, _ isMinor: Bool) async throws
     /// Removes the user's posts, memberships, blocks and terms record (account deletion).
     func deleteAllData(userId: String) async throws
 }
@@ -91,6 +94,9 @@ final class InMemoryGroupService: GroupService {
     }
     func setGuardianControls(userId: String, _ on: Bool) async throws {
         postingRecords[userId, default: PostingRecord(approved: false, guardianControls: false)].guardianControls = on
+    }
+    func setMinor(userId: String, _ isMinor: Bool) async throws {
+        postingRecords[userId, default: PostingRecord(approved: false, guardianControls: false)].isMinor = isMinor
     }
     func deleteAllData(userId: String) async throws {
         allPosts.removeAll { $0.authorId == userId }

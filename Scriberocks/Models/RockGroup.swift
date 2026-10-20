@@ -10,6 +10,8 @@ nonisolated struct RockGroup: Identifiable, Hashable, Sendable {
     /// Distinct reports that hide a post for everyone until reviewed
     /// (1 for groups meant for younger writers, 2 otherwise).
     var reportsToHide: Int
+    /// For members under 18 only (e.g. Young Writers): adults neither see nor join it.
+    var minorsOnly: Bool = false
 }
 
 /// A rock shared to a group.

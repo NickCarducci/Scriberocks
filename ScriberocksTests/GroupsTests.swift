@@ -227,7 +227,7 @@ struct GroupsViewModelTests {
         service.seedGroup(RockGroup(id: "g", name: "Commons", about: "", reportsToHide: 2))
         let vm = GroupsViewModel(service: service, userId: "me", displayName: "Me")
         await vm.load()
-        #expect(await vm.join(vm.groups[0]) == .joined)
+        #expect(await vm.join(vm.groups[0], isMinor: false) == .joined)
         #expect(vm.isMember("g"))
     }
 
@@ -236,13 +236,13 @@ struct GroupsViewModelTests {
         service.seedGroup(RockGroup(id: "g", name: "Commons", about: "", reportsToHide: 1))
         let vm = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
         await vm.load()
-        #expect(await vm.join(vm.groups[0]) == .joined)
+        #expect(await vm.join(vm.groups[0], isMinor: false) == .joined)
         #expect(vm.isMember("g"))
     }
 
     @Test func joiningNeedsSignIn() async {
         let vm = GroupsViewModel(service: InMemoryGroupService(), userId: nil, displayName: nil)
-        #expect(await vm.join(RockGroup(id: "g", name: "G", about: "", reportsToHide: 2)) == .needsSignIn)
+        #expect(await vm.join(RockGroup(id: "g", name: "G", about: "", reportsToHide: 2), isMinor: false) == .needsSignIn)
     }
 }
 
@@ -293,24 +293,24 @@ struct PostingApprovalSyncTests {
         let phone = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
         await phone.recordPostingApproval(method: .inPerson)
         let tablet = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
-        #expect(await tablet.syncPostingApproval(requiresGuardianApproval: true, locallyApproved: false) == true)
+        #expect(await tablet.syncPostingApproval(requiresGuardianApproval: true, isMinor: true, locallyApproved: false) == true)
     }
 
     @Test func syncRecordsWhetherGuardianControlsApply() async {
         let service = InMemoryGroupService()
         let vm = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
-        #expect(await vm.syncPostingApproval(requiresGuardianApproval: true, locallyApproved: false) == false)
+        #expect(await vm.syncPostingApproval(requiresGuardianApproval: true, isMinor: true, locallyApproved: false) == false)
         #expect(service.postingRecords["kid"]?.guardianControls == true)
         // Turned 18, or the guardian lifted Communication Limits: the next
         // age-range answer clears it — no console step.
-        _ = await vm.syncPostingApproval(requiresGuardianApproval: false, locallyApproved: false)
+        _ = await vm.syncPostingApproval(requiresGuardianApproval: false, isMinor: false, locallyApproved: false)
         #expect(service.postingRecords["kid"]?.guardianControls == false)
     }
 
     @Test func aLocalApprovalFromBeforeIsCarriedToTheAccount() async {
         let service = InMemoryGroupService()
         let vm = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
-        #expect(await vm.syncPostingApproval(requiresGuardianApproval: true, locallyApproved: true) == true)
+        #expect(await vm.syncPostingApproval(requiresGuardianApproval: true, isMinor: true, locallyApproved: true) == true)
         #expect(service.postingRecords["kid"]?.approved == true)
     }
 
@@ -320,5 +320,39 @@ struct PostingApprovalSyncTests {
         await vm.recordPostingApproval(method: .ask)
         try await service.deleteAllData(userId: "kid")
         #expect(service.postingRecords["kid"] == nil)
+    }
+}
+
+/// Minors-only groups (e.g. Young Writers) are for members under 18: adults
+/// neither see nor join them.
+@MainActor
+struct MinorsOnlyGroupTests {
+    private func service() -> InMemoryGroupService {
+        let s = InMemoryGroupService()
+        s.seedGroup(RockGroup(id: "commons", name: "Commons", about: "", reportsToHide: 2))
+        s.seedGroup(RockGroup(id: "young", name: "Young Writers", about: "", reportsToHide: 1, minorsOnly: true))
+        return s
+    }
+
+    @Test func adultsDontSeeOrJoinMinorsOnlyGroups() async {
+        let vm = GroupsViewModel(service: service(), userId: "adult", displayName: "A")
+        await vm.load()
+        #expect(vm.visibleGroups(isMinor: false).map(\.id) == ["commons"])
+        #expect(await vm.join(RockGroup(id: "young", name: "Young Writers", about: "", reportsToHide: 1, minorsOnly: true), isMinor: false) == .forMinorsOnly)
+        #expect(!vm.isMember("young"))
+    }
+
+    @Test func minorsSeeAndJoinThem() async {
+        let vm = GroupsViewModel(service: service(), userId: "kid", displayName: "K")
+        await vm.load()
+        #expect(Set(vm.visibleGroups(isMinor: true).map(\.id)) == ["commons", "young"])
+        #expect(await vm.join(vm.groups.first { $0.id == "young" }!, isMinor: true) == .joined)
+    }
+
+    @Test func theAccountRecordsWhetherTheMemberIsAMinor() async {
+        let s = service()
+        let vm = GroupsViewModel(service: s, userId: "kid", displayName: "K")
+        _ = await vm.syncPostingApproval(requiresGuardianApproval: true, isMinor: true, locallyApproved: false)
+        #expect(s.postingRecords["kid"]?.isMinor == true)
     }
 }

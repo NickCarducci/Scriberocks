@@ -47,11 +47,12 @@ struct GroupsView: View {
             }
             #endif
         }
-        .task(id: requiresGuardianApproval) {
+        .task(id: "\(requiresGuardianApproval)-\(childSafety.ageBracket.isMinor)") {
             // The approval lives with the account: load it, and record whether a
             // guardian control applies now (the rules require approval then).
             // Re-runs when the age-range answer changes.
             if await viewModel.syncPostingApproval(requiresGuardianApproval: requiresGuardianApproval,
+                                                   isMinor: childSafety.ageBracket.isMinor,
                                                    locallyApproved: childSafety.postingApproved) {
                 childSafety.markPostingApproved()
             }
@@ -81,7 +82,7 @@ struct GroupsView: View {
     private var list: some View {
         List {
             Section {
-                ForEach(viewModel.groups) { group in
+                ForEach(viewModel.visibleGroups(isMinor: childSafety.ageBracket.isMinor)) { group in
                     if viewModel.isMember(group.id) {
                         NavigationLink(value: group) { row(group, member: true) }
                     } else {
@@ -112,8 +113,9 @@ struct GroupsView: View {
     }
 
     private func join(_ group: RockGroup) async {
-        switch await viewModel.join(group) {
+        switch await viewModel.join(group, isMinor: childSafety.ageBracket.isMinor) {
         case .joined: break
+        case .forMinorsOnly: notice = "\(group.name) is for writers under 18."
         case .needsSignIn: notice = "Sign in on the Profile tab to join groups."
         case .failed(let message): notice = message
         }

@@ -7,7 +7,8 @@ import FirebaseFirestore
 ///   scriberocks_groups/{groupId}/posts/{postId}   authorId, authorName, text, createdAt, reportedBy, review
 ///   scriberocks_reports/{reportId}                groupId, postId, postText, authorId, reporterId, reason, createdAt
 ///   scriberocks_users/{uid}                       termsVersion, postingApproved, postingApprovedMethod,
-///                                                 postingApprovedAt, guardianControls
+///                                                 postingApprovedAt, guardianControls, isMinor
+///   scriberocks_groups/{groupId}.minorsOnly       members under 18 only
 ///   scriberocks_users/{uid}/blocks/{blockedUid}   createdAt
 /// A Cloud Function emails each new report to the moderator.
 final class FirestoreGroupService: GroupService {
@@ -21,7 +22,7 @@ final class FirestoreGroupService: GroupService {
         try await groupsCollection.getDocuments().documents.map { doc in
             let d = doc.data()
             return RockGroup(id: doc.documentID, name: d["name"] as? String ?? doc.documentID, about: d["about"] as? String ?? "",
-                             reportsToHide: d["reportsToHide"] as? Int ?? 2)
+                             reportsToHide: d["reportsToHide"] as? Int ?? 2, minorsOnly: d["minorsOnly"] as? Bool ?? false)
         }.sorted { $0.name < $1.name }
     }
 
@@ -94,7 +95,8 @@ final class FirestoreGroupService: GroupService {
 
     func postingRecord(userId: String) async throws -> PostingRecord? {
         guard let d = try await user(userId).getDocument().data() else { return nil }
-        return PostingRecord(approved: d["postingApproved"] as? Bool ?? false, guardianControls: d["guardianControls"] as? Bool ?? false)
+        return PostingRecord(approved: d["postingApproved"] as? Bool ?? false, guardianControls: d["guardianControls"] as? Bool ?? false,
+                             isMinor: d["isMinor"] as? Bool ?? false)
     }
 
     func recordPostingApproval(userId: String, method: PostingApproval.Method) async throws {
@@ -105,6 +107,10 @@ final class FirestoreGroupService: GroupService {
 
     func setGuardianControls(userId: String, _ on: Bool) async throws {
         try await user(userId).setData(["guardianControls": on], merge: true)
+    }
+
+    func setMinor(userId: String, _ isMinor: Bool) async throws {
+        try await user(userId).setData(["isMinor": isMinor], merge: true)
     }
 
     func deleteAllData(userId: String) async throws {
