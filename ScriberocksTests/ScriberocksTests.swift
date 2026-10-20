@@ -377,3 +377,30 @@ struct AgeRangeRequestTests {
         #expect(calls == 1)
     }
 }
+
+/// The home screen's center button does the one thing that fits the moment.
+@MainActor
+struct PrimaryActionTests {
+    private func editor() throws -> RockEditorViewModel {
+        let url = FileManager.default.temporaryDirectory.appending(path: "rocks-\(UUID()).json")
+        let store = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: UserDefaults(suiteName: "pa-\(UUID())")!)
+        let rock = try #require(store.add(text: "the rough draft"))
+        return RockEditorViewModel(rockID: rock.id, store: store)
+    }
+
+    @Test func onTheCurrentTextItStartsANewRock() throws {
+        #expect(try editor().primaryAction(isTyping: false) == .newRock)
+    }
+
+    @Test func onASuggestionItSavesIt() throws {
+        let vm = try editor()
+        vm.selectOption(1, count: 3)
+        #expect(vm.primaryAction(isTyping: false) == .saveOption)
+    }
+
+    @Test func whileTypingItFinishes() throws {
+        let vm = try editor()
+        vm.selectOption(1, count: 3)
+        #expect(vm.primaryAction(isTyping: true) == .done)
+    }
+}

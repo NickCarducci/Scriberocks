@@ -55,6 +55,22 @@ final class RockEditorViewModel: ObservableObject {
         optionIndex = 0
     }
 
+    // MARK: - Center button
+
+    enum PrimaryAction: Equatable {
+        /// On the current text: start a new rock.
+        case newRock
+        /// On a suggestion: keep it as a revision.
+        case saveOption
+        /// Typing: finish (saves the edit as a revision).
+        case done
+    }
+
+    func primaryAction(isTyping: Bool) -> PrimaryAction {
+        if isTyping { return .done }
+        return canSaveOption ? .saveOption : .newRock
+    }
+
     // MARK: - Inline options
 
     var canSaveOption: Bool { optionIndex > 0 }

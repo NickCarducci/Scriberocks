@@ -6,10 +6,8 @@
 import SwiftUI
 import DeclaredAgeRange
 
-enum AppTab: Hashable {
-    case write, rocks, groups, profile
-}
-
+/// The app's root: the home screen (latest rock + suggestions), with Groups
+/// and Profile a tap away at the top.
 struct ContentView: View {
     @EnvironmentObject private var container: AppContainer
     @EnvironmentObject private var authState: UserAuthState
@@ -17,61 +15,33 @@ struct ContentView: View {
     @EnvironmentObject private var childSafetyManager: ChildSafetyManager
     @Environment(\.requestAgeRange) private var requestAgeRange
 
-    @State private var selection: AppTab = .write
-    /// Open rock in the Rocks tab; saving a new rock opens it here.
-    @State private var rocksPath: [Rock.ID] = []
-
     var body: some View {
-        TabView(selection: $selection) {
-            Tab("Write", systemImage: "pencil.and.outline", value: .write) {
-                WriteView(store: rockStore) { rock in
-                    rocksPath = [rock.id]
-                    selection = .rocks
+        HomeView(store: rockStore) { groups }
+            .task(id: authState.userId) {
+                // Keep the age range (and parental controls) current; see refreshAgeRange.
+                if authState.userId != nil { await childSafetyManager.refreshAgeRange(using: requestAgeRange) }
+            }
+            #if DEBUG
+            .overlay {
+                if ProcessInfo.processInfo.arguments.contains("-symbolGallery") {
+                    SymbolGallery().frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).background(.background)
                 }
             }
-            Tab("Rocks", image: "rock", value: .rocks) {
-                RocksListView(store: rockStore, path: $rocksPath)
-            }
-            Tab("Groups", systemImage: "person.3", value: .groups) {
-                #if DEBUG
-                if ProcessInfo.processInfo.arguments.contains("-demoGroups") {
-                    GroupsView(service: InMemoryGroupService.demo, userId: "demo", displayName: "You")
-                } else {
-                    GroupsView(service: container.groupService, userId: authState.userId, displayName: authState.displayName)
-                        .id(authState.userId)
-                }
-                #else
-                GroupsView(service: container.groupService, userId: authState.userId, displayName: authState.displayName)
-                    .id(authState.userId)
-                #endif
-            }
-            Tab("Profile", systemImage: "person.crop.circle", value: .profile) {
-                ProfileView(
-                    container: container,
-                    authState: authState,
-                    store: rockStore,
-                    childSafety: childSafetyManager
-                )
-            }
-        }
-        .task(id: authState.userId) {
-            // Keep the age range (and parental controls) current; see refreshAgeRange.
-            if authState.userId != nil { await childSafetyManager.refreshAgeRange(using: requestAgeRange) }
-        }
+            #endif
+    }
+
+    @ViewBuilder
+    private var groups: some View {
         #if DEBUG
-        .overlay {
-            if ProcessInfo.processInfo.arguments.contains("-symbolGallery") {
-                SymbolGallery().frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).background(.background)
-            }
+        if ProcessInfo.processInfo.arguments.contains("-demoGroups") {
+            GroupsView(service: InMemoryGroupService.demo, userId: "demo", displayName: "You")
+        } else {
+            GroupsView(service: container.groupService, userId: authState.userId, displayName: authState.displayName)
+                .id(authState.userId)
         }
-        .onAppear {
-            // Screenshot/QA hook: `-openNewestRock` opens the newest rock in the editor.
-            if ProcessInfo.processInfo.arguments.contains("-openGroups") { selection = .groups }
-            if ProcessInfo.processInfo.arguments.contains("-openNewestRock"), let rock = rockStore.rocks.first {
-                selection = .rocks
-                rocksPath = [rock.id]
-            }
-        }
+        #else
+        GroupsView(service: container.groupService, userId: authState.userId, displayName: authState.displayName)
+            .id(authState.userId)
         #endif
     }
 }
