@@ -61,13 +61,19 @@ final class ProfileViewModel: ObservableObject {
         switch result {
         case .success(let authorization):
             isWorking = true
-            defer { isWorking = false }
             do {
                 try await appleAuth.signIn(with: authorization)
                 authState.refresh()
-                await childSafety.requestAgeRangeIfNeeded(using: requestAgeRange)
             } catch {
+                isWorking = false
                 errorMessage = error.localizedDescription
+                return
+            }
+            // Signed in: the spinner stops here; the age range is asked after,
+            // so a slow or stuck age-range sheet can't hold up sign-in.
+            isWorking = false
+            if case .failed(let message) = await childSafety.requestAgeRangeIfNeeded(using: requestAgeRange) {
+                errorMessage = "Signed in, but couldn't get your age range. \(message) You can try again with Share Age Range."
             }
         case .failure(let error):
             if (error as? ASAuthorizationError)?.code != .canceled {
@@ -77,7 +83,11 @@ final class ProfileViewModel: ObservableObject {
     }
 
     func shareAgeRange(requestAgeRange: DeclaredAgeRangeAction) async {
-        await childSafety.requestAgeRangeIfNeeded(using: requestAgeRange, force: true)
+        isWorking = true
+        defer { isWorking = false }
+        if case .failed(let message) = await childSafety.requestAgeRangeIfNeeded(using: requestAgeRange, force: true) {
+            errorMessage = "Couldn't get your age range. \(message)"
+        }
     }
 
     func signOut() {

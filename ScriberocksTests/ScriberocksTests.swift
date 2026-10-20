@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import DeclaredAgeRange
 @testable import Scriberocks
 
 @MainActor
@@ -322,5 +323,57 @@ struct PageSwipeTests {
         _ = swipe.update(CGSize(width: 20, height: 0))
         swipe.reset()
         #expect(swipe.axis == .undecided)
+    }
+}
+
+/// Asking Apple for the age range: one request at a time, a time limit, and
+/// failures reported instead of an endless wait.
+@MainActor
+struct AgeRangeRequestTests {
+    private func manager() -> ChildSafetyManager {
+        ChildSafetyManager(defaults: UserDefaults(suiteName: "age-\(UUID())")!)
+    }
+
+    @Test func overlappingRequestsShareOneCallToApple() async {
+        let m = manager()
+        var calls = 0
+        let slow: ChildSafetyManager.AgeRequest = { _, _, _ in
+            calls += 1
+            try await Task.sleep(for: .milliseconds(200))
+            return .declinedSharing
+        }
+        async let a = m.requestAgeRangeIfNeeded(using: slow, force: true)
+        async let b = m.requestAgeRangeIfNeeded(using: slow, force: true)
+        let (first, second) = await (a, b)
+        #expect(calls == 1)
+        #expect(first == .declined && second == .declined)
+        #expect(m.ageBracket == .declined)
+    }
+
+    @Test func aRequestThatNeverAnswersTimesOut() async {
+        let m = manager()
+        let never: ChildSafetyManager.AgeRequest = { _, _, _ in
+            try await Task.sleep(for: .seconds(60))
+            return .declinedSharing
+        }
+        let outcome = await m.requestAgeRangeIfNeeded(using: never, force: true, timeout: .milliseconds(100))
+        guard case .failed = outcome else { Issue.record("expected a failure, got \(String(describing: outcome))"); return }
+        #expect(m.ageBracket == .unknown)
+    }
+
+    @Test func errorsAreReportedNotSwallowed() async {
+        struct Boom: LocalizedError { var errorDescription: String? { "boom" } }
+        let m = manager()
+        let outcome = await m.requestAgeRangeIfNeeded(using: { _, _, _ in throw Boom() }, force: true)
+        #expect(outcome == .failed("boom"))
+    }
+
+    @Test func aKnownAnswerIsNotRequestedAgainUnlessForced() async {
+        let m = manager()
+        var calls = 0
+        let answer: ChildSafetyManager.AgeRequest = { _, _, _ in calls += 1; return .declinedSharing }
+        _ = await m.requestAgeRangeIfNeeded(using: answer, force: true)
+        #expect(await m.requestAgeRangeIfNeeded(using: answer) == nil)
+        #expect(calls == 1)
     }
 }

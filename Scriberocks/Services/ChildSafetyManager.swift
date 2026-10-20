@@ -82,36 +82,75 @@ final class ChildSafetyManager: ObservableObject {
         ageBracket.isMinor || hasCommunicationLimits
     }
 
+    /// Asks Apple for the age range (gates 13, 16, 18).
+    typealias AgeRequest = (Int, Int?, Int?) async throws -> AgeRangeService.Response
+
+    enum AgeRangeOutcome: Equatable {
+        case shared
+        case declined
+        /// Apple didn't answer, or answered with an error; the bracket is unchanged.
+        case failed(String)
+    }
+
+    /// The request in progress, so overlapping callers (the launch refresh and
+    /// the Profile button) share one call to Apple instead of stacking sheets.
+    private var inFlight: Task<AgeRangeOutcome, Never>?
+
     /// Re-reads the age range (each launch while signed in). Apple caches the
     /// answer: with Always Share this returns the current range without a
     /// prompt, updated on the declaration's anniversary or when the person
     /// taps Share Age Range for this app in Settings; parental controls come
     /// with every answer. So turning 18 or lifted Communication Limits reach
     /// the app on their own.
-    func refreshAgeRange(using requestAgeRange: DeclaredAgeRangeAction) async {
+    @discardableResult
+    func refreshAgeRange(using requestAgeRange: DeclaredAgeRangeAction) async -> AgeRangeOutcome? {
         await requestAgeRangeIfNeeded(using: requestAgeRange, force: true)
     }
 
-    /// Asks if not yet known; pass `force` to read it again (see refreshAgeRange).
-    func requestAgeRangeIfNeeded(using requestAgeRange: DeclaredAgeRangeAction, force: Bool = false) async {
-        guard force || ageBracket == .unknown else { return }
-        do {
+    @discardableResult
+    func requestAgeRangeIfNeeded(using requestAgeRange: DeclaredAgeRangeAction, force: Bool = false) async -> AgeRangeOutcome? {
+        await requestAgeRangeIfNeeded(using: { try await requestAgeRange(ageGates: $0, $1, $2) }, force: force)
+    }
+
+    /// Asks if not yet known (or `force`). Returns nil when nothing was asked.
+    /// One request at a time; gives up after `timeout` so a stuck system sheet
+    /// can't leave the app waiting forever.
+    @discardableResult
+    func requestAgeRangeIfNeeded(using request: @escaping AgeRequest, force: Bool = false,
+                                 timeout: Duration = .seconds(30)) async -> AgeRangeOutcome? {
+        if let inFlight { return await inFlight.value }
+        guard force || ageBracket == .unknown else { return nil }
+        let task = Task { () -> AgeRangeOutcome in
             let gates = AgeBracket.ageGates
-            switch try await requestAgeRange(ageGates: gates.0, gates.1, gates.2) {
-            case .sharing(let range):
-                store(
-                    AgeBracket.from(lowerBound: range.lowerBound, upperBound: range.upperBound),
-                    limits: range.activeParentalControls.contains(.communicationLimits)
-                )
-            case .declinedSharing:
-                store(.declined, limits: false)
-            @unknown default:
-                break
+            do {
+                let response = try await withThrowingTaskGroup(of: AgeRangeService.Response?.self) { group in
+                    group.addTask { try await request(gates.0, gates.1, gates.2) }
+                    group.addTask { try await Task.sleep(for: timeout); return nil }
+                    let first = try await group.next() ?? nil
+                    group.cancelAll()
+                    return first
+                }
+                switch response {
+                case .sharing(let range):
+                    store(AgeBracket.from(lowerBound: range.lowerBound, upperBound: range.upperBound),
+                          limits: range.activeParentalControls.contains(.communicationLimits))
+                    return .shared
+                case .declinedSharing:
+                    store(.declined, limits: false)
+                    return .declined
+                case nil:
+                    return .failed("Apple's age range service didn't respond. Try again, or check Settings › Screen Time.")
+                @unknown default:
+                    return .failed("Unexpected answer from Apple's age range service.")
+                }
+            } catch {
+                // e.g. .notAvailable (no Apple Account / unsupported region): stay as is, ask again later.
+                return .failed(error.localizedDescription)
             }
-        } catch {
-            // .notAvailable (e.g. no Apple Account / unsupported region) — stay unknown and ask again later.
-            print("Age range unavailable: \(error.localizedDescription)")
         }
+        inFlight = task
+        defer { inFlight = nil }
+        return await task.value
     }
 
     func reset() {
