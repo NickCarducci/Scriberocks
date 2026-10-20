@@ -57,11 +57,24 @@ final class ChildSafetyManager: ObservableObject {
     private let defaults: UserDefaults
     private static let bracketKey = "ageBracket"
     private static let limitsKey = "hasCommunicationLimits"
+    private static let postingKey = "postingApproved"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         ageBracket = defaults.string(forKey: Self.bracketKey).flatMap(AgeBracket.init) ?? .unknown
         hasCommunicationLimits = defaults.bool(forKey: Self.limitsKey)
+        postingApproved = defaults.bool(forKey: Self.postingKey)
+    }
+
+    /// A guardian approved posting to groups (PostingApproval), on this device.
+    @Published private(set) var postingApproved: Bool
+
+    /// Posting asks a guardian first, once.
+    var needsPostingApproval: Bool { requiresGuardianApproval && !postingApproved }
+
+    func markPostingApproved() {
+        postingApproved = true
+        defaults.set(true, forKey: Self.postingKey)
     }
 
     /// Group features will need a guardian's OK for these users.
@@ -93,6 +106,8 @@ final class ChildSafetyManager: ObservableObject {
 
     func reset() {
         store(.unknown, limits: false)
+        postingApproved = false
+        defaults.removeObject(forKey: Self.postingKey)
     }
 
     private func store(_ bracket: AgeBracket, limits: Bool) {

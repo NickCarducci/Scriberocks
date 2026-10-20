@@ -6,6 +6,8 @@ nonisolated enum ShareOutcome: Equatable, Sendable {
     case needsSignIn
     /// Show the community terms; share again after agreeing.
     case needsTerms
+    /// A guardian approves posting once (PostingApproval); share again after.
+    case needsGuardianApproval
     /// The filter caught it; nothing was sent.
     case flagged(String)
     case failed(String)
@@ -44,15 +46,20 @@ final class GroupFeedViewModel: ObservableObject {
     private let filter: ContentFilter
     /// Which of these author IDs a guardian already approved (PermissionKit known handles).
     private let approvedAmong: (Set<String>) async -> Set<String>
+    private let requiresGuardianApproval: Bool
+    private let postingApproved: () -> Bool
 
     init(group: RockGroup, service: GroupService, userId: String?, displayName: String?, filter: ContentFilter = LayeredFilter.standard,
-         requiresGuardianApproval: Bool = false, approvedAmong: @escaping (Set<String>) async -> Set<String> = { $0 }) {
+         requiresGuardianApproval: Bool = false, approvedAmong: @escaping (Set<String>) async -> Set<String> = { $0 },
+         postingApproved: @escaping () -> Bool = { false }) {
         self.group = group
         self.service = service
         self.userId = userId
         self.displayName = displayName ?? "Scribe"
         self.filter = filter
         self.approvedAmong = approvedAmong
+        self.requiresGuardianApproval = requiresGuardianApproval
+        self.postingApproved = postingApproved
         approvedAuthors = requiresGuardianApproval ? [] : nil
     }
 
@@ -117,6 +124,7 @@ final class GroupFeedViewModel: ObservableObject {
     func share(_ text: String) async -> ShareOutcome {
         guard let userId else { return .needsSignIn }
         guard hasAcceptedTerms else { return .needsTerms }
+        if requiresGuardianApproval && !postingApproved() { return .needsGuardianApproval }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return .failed("Nothing to share.") }
         if case .flagged(let reason) = await filter.check(trimmed) { return .flagged(reason) }

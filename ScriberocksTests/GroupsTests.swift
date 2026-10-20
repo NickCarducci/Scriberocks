@@ -253,3 +253,32 @@ struct GuardianApprovalTests {
         #expect(GuardianApproval.handleValue(forAuthor: "uid123") != GuardianApproval.handleValue(forAuthor: "Ana"))
     }
 }
+
+/// Posting to a group needs one guardian approval of the capability for
+/// readers under guardian controls; reading stays per author.
+@MainActor
+struct PostingApprovalGateTests {
+    private let group = RockGroup(id: "g", name: "Commons", about: "", reportsToHide: 2)
+
+    @Test func aGuardedWriterAsksOnceBeforeSharing() async {
+        var approved = false
+        let service = InMemoryGroupService()
+        let vm = GroupFeedViewModel(group: group, service: service, userId: "kid", displayName: "Kid", filter: StubFilter(),
+                                    requiresGuardianApproval: true, postingApproved: { approved })
+        await vm.acceptTerms()
+        #expect(await vm.share("hello") == .needsGuardianApproval)
+        #expect(service.allPosts.isEmpty)
+        approved = true
+        #expect(await vm.share("hello") == .posted)
+    }
+
+    @Test func othersShareWithoutAsking() async {
+        let vm = GroupFeedViewModel(group: group, service: InMemoryGroupService(), userId: "me", displayName: "Me", filter: StubFilter())
+        await vm.acceptTerms()
+        #expect(await vm.share("hello") == .posted)
+    }
+
+    @Test func theQuestionDescribesTheCapability() {
+        #expect(PostingApproval.description.contains("groups"))
+    }
+}

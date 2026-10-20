@@ -8,17 +8,21 @@ struct GroupFeedView: View {
     @StateObject private var viewModel: GroupFeedViewModel
     @EnvironmentObject private var rockStore: RockStore
     @State private var askingGuardian = false
+    @State private var askingToPost = false
+    @EnvironmentObject private var childSafety: ChildSafetyManager
     @State private var choosingRock = false
     @State private var showingTerms = false
     @State private var pendingText: String?
     @State private var notice: String?
     @State private var reporting: GroupPost?
 
-    init(group: RockGroup, service: GroupService, userId: String?, displayName: String?, requiresGuardianApproval: Bool) {
+    init(group: RockGroup, service: GroupService, userId: String?, displayName: String?, requiresGuardianApproval: Bool,
+         postingApproved: @escaping () -> Bool) {
         _viewModel = StateObject(wrappedValue: GroupFeedViewModel(
             group: group, service: service, userId: userId, displayName: displayName,
             requiresGuardianApproval: requiresGuardianApproval,
-            approvedAmong: { await GuardianApproval.approved(among: $0) }
+            approvedAmong: { await GuardianApproval.approved(among: $0) },
+            postingApproved: postingApproved
         ))
     }
 
@@ -64,6 +68,14 @@ struct GroupFeedView: View {
                     if let text = pendingText { await share(text) }
                 }
             }
+        }
+        .sheet(isPresented: $askingToPost) {
+            AskToPostView {
+                childSafety.markPostingApproved()
+                askingToPost = false
+                if let text = pendingText { Task { await share(text) } }
+            }
+            .presentationDetents([.medium, .large])
         }
         .confirmationDialog("Report this post?", isPresented: Binding(get: { reporting != nil }, set: { if !$0 { reporting = nil } }), titleVisibility: .visible) {
             ForEach(["Harassment or bullying", "Hate", "Threats or self-harm", "Sexual content", "Spam", "Something else"], id: \.self) { reason in
@@ -133,6 +145,9 @@ struct GroupFeedView: View {
         case .needsTerms:
             pendingText = text
             showingTerms = true
+        case .needsGuardianApproval:
+            pendingText = text
+            askingToPost = true
         case .needsSignIn: notice = "Sign in on the Profile tab to share."
         case .flagged(let reason): notice = reason
         case .failed(let message): notice = message
@@ -199,6 +214,50 @@ private struct TermsView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Not now") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("Agree", action: agree) }
             }
+        }
+    }
+}
+
+/// Asks a parent or guardian once to allow posting to groups: in Messages, or
+/// (iOS 27) in person on this device.
+private struct AskToPostView: View {
+    let approved: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var working = false
+    @State private var note: String?
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "person.2.badge.key").font(.largeTitle).foregroundStyle(.tint).accessibilityHidden(true)
+            Text("Ask to post").font(.title3.bold())
+            Text("A parent or guardian approves sharing to groups once. Your rock is kept until then.")
+                .multilineTextAlignment(.center).foregroundStyle(.secondary)
+            if let note { Text(note).font(.callout).multilineTextAlignment(.center) }
+            Button { Task { await ask(inPerson: false) } } label: {
+                Label("Ask in Messages", systemImage: "paperplane").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            if PostingApproval.supportsInPerson {
+                Button { Task { await ask(inPerson: true) } } label: {
+                    Label("A parent is with me", systemImage: "person.2").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+            Button("Not now") { dismiss() }.foregroundStyle(.secondary)
+        }
+        .disabled(working)
+        .padding(24)
+    }
+
+    private func ask(inPerson: Bool) async {
+        working = true
+        defer { working = false }
+        switch await PostingApproval.ask(inPerson: inPerson) {
+        case .approved: approved()
+        case .sent: note = "Request sent. You can share once they approve."
+        case .denied: note = "Not approved this time."
+        case .cancelled: break
+        case .unavailable(let message): note = message
         }
     }
 }

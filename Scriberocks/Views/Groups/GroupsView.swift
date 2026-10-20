@@ -29,7 +29,8 @@ struct GroupsView: View {
             .navigationTitle("Groups")
             .navigationDestination(for: RockGroup.self) { group in
                 GroupFeedView(group: group, service: service, userId: viewModel.userId, displayName: viewModel.displayName,
-                              requiresGuardianApproval: requiresGuardianApproval)
+                              requiresGuardianApproval: requiresGuardianApproval,
+                              postingApproved: { [childSafety] in childSafety.postingApproved })
             }
         }
         .task {
@@ -41,6 +42,12 @@ struct GroupsView: View {
                 path = [g]
             }
             #endif
+        }
+        .task {
+            // A guardian's answer to "Ask to post" (sent in Messages) can arrive any time.
+            for await approved in PostingApproval.answers() where approved {
+                childSafety.markPostingApproved()
+            }
         }
         .alert("Groups", isPresented: Binding(get: { notice != nil || viewModel.errorMessage != nil }, set: { if !$0 { notice = nil; viewModel.errorMessage = nil } })) {
             Button("OK", role: .cancel) {}
