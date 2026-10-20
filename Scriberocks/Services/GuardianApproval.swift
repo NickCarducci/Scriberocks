@@ -46,7 +46,6 @@ nonisolated enum GuardianApproval {
 
     @MainActor
     static func ask(about authors: [AuthorRef]) async -> AskResult {
-        guard #available(iOS 26.2, *) else { return .unavailable("Update iOS to ask a parent or guardian.") }
         guard let presenter = UIApplication.shared.connectedScenes
             .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController })
             .first.map(topmost) else { return .unavailable("Couldn't show the request.") }
@@ -70,11 +69,7 @@ nonisolated enum GuardianApproval {
                     let ids = Set(response.question.topic.personInformation.compactMap { authorId(fromHandle: $0.handle.value) })
                     if !ids.isEmpty { continuation.yield(ids) }
                 }
-                if #available(iOS 26.2, *) {
-                    for await response in AskCenter.shared.responses(for: CommunicationTopic.self) { handle(response) }
-                } else {
-                    for await response in CommunicationLimits.current.updates { handle(response) }
-                }
+                for await response in AskCenter.shared.responses(for: CommunicationTopic.self) { handle(response) }
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }

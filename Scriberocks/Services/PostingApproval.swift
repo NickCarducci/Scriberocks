@@ -38,7 +38,6 @@ enum PostingApproval {
     }
 
     static func ask(inPerson: Bool) async -> Outcome {
-        guard #available(iOS 26.2, *) else { return .unavailable("Update iOS to ask a parent or guardian.") }
         guard let presenter = UIApplication.shared.connectedScenes
             .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController })
             .first.map(topmost) else { return .unavailable("Couldn't show the request.") }
@@ -67,11 +66,9 @@ enum PostingApproval {
     nonisolated static func answers() -> AsyncStream<Bool> {
         AsyncStream { continuation in
             let task = Task {
-                if #available(iOS 26.2, *) {
-                    for await response in AskCenter.shared.responses(for: SignificantAppUpdateTopic.self)
-                    where response.question.topic.description == description {
-                        continuation.yield(response.choice.answer == .approval)
-                    }
+                for await response in AskCenter.shared.responses(for: SignificantAppUpdateTopic.self)
+                where response.question.topic.description == description {
+                    continuation.yield(response.choice.answer == .approval)
                 }
                 continuation.finish()
             }
