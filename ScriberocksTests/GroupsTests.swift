@@ -301,6 +301,10 @@ struct PostingApprovalSyncTests {
         let vm = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
         #expect(await vm.syncPostingApproval(requiresGuardianApproval: true, locallyApproved: false) == false)
         #expect(service.postingRecords["kid"]?.guardianControls == true)
+        // Turned 18, or the guardian lifted Communication Limits: the next
+        // age-range answer clears it — no console step.
+        _ = await vm.syncPostingApproval(requiresGuardianApproval: false, locallyApproved: false)
+        #expect(service.postingRecords["kid"]?.guardianControls == false)
     }
 
     @Test func aLocalApprovalFromBeforeIsCarriedToTheAccount() async {

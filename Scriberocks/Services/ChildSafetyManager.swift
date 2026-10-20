@@ -82,7 +82,17 @@ final class ChildSafetyManager: ObservableObject {
         ageBracket.isMinor || hasCommunicationLimits
     }
 
-    /// Asks once per device; pass `force` to let the user re-share.
+    /// Re-reads the age range (each launch while signed in). Apple caches the
+    /// answer: with Always Share this returns the current range without a
+    /// prompt, updated on the declaration's anniversary or when the person
+    /// taps Share Age Range for this app in Settings; parental controls come
+    /// with every answer. So turning 18 or lifted Communication Limits reach
+    /// the app on their own.
+    func refreshAgeRange(using requestAgeRange: DeclaredAgeRangeAction) async {
+        await requestAgeRangeIfNeeded(using: requestAgeRange, force: true)
+    }
+
+    /// Asks if not yet known; pass `force` to read it again (see refreshAgeRange).
     func requestAgeRangeIfNeeded(using requestAgeRange: DeclaredAgeRangeAction, force: Bool = false) async {
         guard force || ageBracket == .unknown else { return }
         do {

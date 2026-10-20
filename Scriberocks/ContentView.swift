@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import DeclaredAgeRange
 
 enum AppTab: Hashable {
     case write, rocks, groups, profile
@@ -14,6 +15,7 @@ struct ContentView: View {
     @EnvironmentObject private var authState: UserAuthState
     @EnvironmentObject private var rockStore: RockStore
     @EnvironmentObject private var childSafetyManager: ChildSafetyManager
+    @Environment(\.requestAgeRange) private var requestAgeRange
 
     @State private var selection: AppTab = .write
     /// Open rock in the Rocks tab; saving a new rock opens it here.
@@ -51,6 +53,10 @@ struct ContentView: View {
                     childSafety: childSafetyManager
                 )
             }
+        }
+        .task(id: authState.userId) {
+            // Keep the age range (and parental controls) current; see refreshAgeRange.
+            if authState.userId != nil { await childSafetyManager.refreshAgeRange(using: requestAgeRange) }
         }
         #if DEBUG
         .overlay {

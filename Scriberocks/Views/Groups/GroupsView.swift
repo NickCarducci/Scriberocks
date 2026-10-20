@@ -47,9 +47,10 @@ struct GroupsView: View {
             }
             #endif
         }
-        .task {
+        .task(id: requiresGuardianApproval) {
             // The approval lives with the account: load it, and record whether a
-            // guardian control applies (the rules require approval then).
+            // guardian control applies now (the rules require approval then).
+            // Re-runs when the age-range answer changes.
             if await viewModel.syncPostingApproval(requiresGuardianApproval: requiresGuardianApproval,
                                                    locallyApproved: childSafety.postingApproved) {
                 childSafety.markPostingApproved()

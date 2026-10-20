@@ -39,14 +39,15 @@ final class GroupsViewModel: ObservableObject {
         }
     }
 
-    /// At sign-in: tell the account whether a guardian control applies (so the
-    /// rules can require approval), carry an approval made on this device
-    /// before approvals were stored with the account, and return whether
+    /// Whenever the age-range answer is (re)read: record whether a guardian
+    /// control applies now — set or cleared, so turning 18 or a guardian
+    /// lifting Communication Limits takes effect with no manual step — carry
+    /// an approval made on this device to the account, and return whether
     /// posting is approved for this account on any device.
     func syncPostingApproval(requiresGuardianApproval: Bool, locallyApproved: Bool) async -> Bool {
         guard let userId else { return locallyApproved }
         do {
-            if requiresGuardianApproval { try await service.setGuardianControls(userId: userId, true) }
+            try await service.setGuardianControls(userId: userId, requiresGuardianApproval)
             if try await service.postingRecord(userId: userId)?.approved == true { return true }
             if locallyApproved {
                 try await service.recordPostingApproval(userId: userId, method: .ask)
