@@ -492,19 +492,19 @@ struct RevisionChoiceTests {
         return (RockEditorViewModel(rockID: rock.id, store: store), store, rock.id)
     }
 
-    @Test func choicesRunOldestToNewestWithTheLatestMarked() throws {
+    @Test func choicesAreMostRecentFirstWithTheLatestMarked() throws {
         let (vm, _, _) = try editor()
         let choices = vm.revisionChoices
-        #expect(choices.map(\.index) == [0, 1, 2])
-        #expect(choices.map(\.isLatest) == [false, false, true])
-        #expect(choices.last?.isShowing == true)
+        #expect(choices.map(\.index) == [2, 1, 0])
+        #expect(choices.map(\.isLatest) == [true, false, false])
+        #expect(choices.first?.isShowing == true)
     }
 
     @Test func pickingADateShowsThatVersion() throws {
         let (vm, _, _) = try editor()
         vm.showRevision(0)
         #expect(vm.text == "one" && vm.isViewingOlderRevision)
-        #expect(vm.revisionChoices.first?.isShowing == true)
+        #expect(vm.revisionChoices.last?.isShowing == true)
     }
 
     @Test func aRockOpensOnItsNewestVersion() throws {

@@ -176,6 +176,9 @@ struct RockCanvas: View {
                 .background(.thinMaterial, in: .capsule)
             }
             .buttonStyle(.plain)
+            // Most recent at the top wherever the menu opens (iOS otherwise puts
+            // the first item nearest the button, flipping it when opening upward).
+            .menuOrder(.fixed)
             .padding(.top, 8)
             .accessibilityLabel("Version: \(showing.isLatest ? "latest, " : "")\(Self.when(showing.date))")
             .accessibilityHint("Choose a saved version. Changes to an older version branch into a new rock.")
