@@ -1,5 +1,4 @@
 import Foundation
-import FoundationModels
 
 nonisolated enum FilterVerdict: Equatable, Sendable {
     case allowed
@@ -25,9 +24,11 @@ nonisolated struct LayeredFilter: ContentFilter {
         return .allowed
     }
 
-    /// The app's filter: the word list everywhere, then Apple's on-device
-    /// model where Apple Intelligence is available.
-    static let standard = LayeredFilter(layers: [WordListFilter(), OnDeviceModelFilter()])
+    /// The app's filter. No Apple on-device models (Foundation Models): the
+    /// language engine stays usable on older iOS, and filtering doesn't depend
+    /// on Apple Intelligence. Another layer (e.g. a scribe-based classifier)
+    /// can be added here.
+    static let standard = LayeredFilter(layers: [WordListFilter()])
 }
 
 /// Whole words and phrases from a list, matched case-insensitively after
@@ -56,42 +57,13 @@ nonisolated struct WordListFilter: ContentFilter {
         return mapped.split { !$0.isLetter }.map(String.init)
     }
 
-    /// Severe slurs, threats and incitement to self-harm. Kept short on
-    /// purpose: the on-device model handles context; this list is the floor
-    /// on every device.
+    /// Severe slurs, threats and incitement to self-harm, matched as whole
+    /// words or phrases (short on purpose, to avoid false positives); reports
+    /// and moderation catch what a list can't.
     static let defaultTerms: [String] = [
         // Incitement to self-harm and threats
         "kys", "kill yourself", "go die", "hang yourself", "i will kill you", "im going to kill you",
         // Severe slurs
         "nigger", "nigga", "faggot", "fag", "retard", "tranny", "kike", "spic", "chink", "wetback", "gook", "dyke",
     ]
-}
-
-/// Apple's on-device language model (Foundation Models, content-tagging use
-/// case) as a moderation check. Text the model's own guardrails refuse to
-/// process is flagged too. Where Apple Intelligence isn't available this
-/// filter allows everything and the word list stands alone.
-nonisolated struct OnDeviceModelFilter: ContentFilter {
-    func check(_ text: String) async -> FilterVerdict {
-        let model = SystemLanguageModel(useCase: .contentTagging)
-        guard case .available = model.availability else { return .allowed }
-        let session = LanguageModelSession(model: model, instructions: """
-            You moderate posts in a writing community. Answer with exactly one word: \
-            FLAG if the post harasses, threatens, sexually exploits, or demeans people for who they are, \
-            or encourages self-harm; otherwise OK. Strong language, sad or dark writing, and fiction are OK.
-            """)
-        do {
-            let answer = try await session.respond(to: "Post:\n\(text)").content
-            return answer.uppercased().contains("FLAG") ? .flagged("This may break the community terms. Try rephrasing.") : .allowed
-        } catch let error as LanguageModelSession.GenerationError {
-            switch error {
-            case .guardrailViolation, .refusal:
-                return .flagged("This may break the community terms. Try rephrasing.")
-            default:
-                return .allowed
-            }
-        } catch {
-            return .allowed
-        }
-    }
 }
