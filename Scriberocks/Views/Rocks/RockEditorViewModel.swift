@@ -55,6 +55,41 @@ final class RockEditorViewModel: ObservableObject {
         optionIndex = 0
     }
 
+    // MARK: - One row of pages (stories-style)
+
+    enum RowMove: Equatable {
+        case option(Int)
+        /// Before this rock's text: the newer rock.
+        case previousRock
+        /// Past this rock's last suggestion: the older rock.
+        case nextRock
+    }
+
+    /// Where a swipe of `step` pages lands from page `index` (0 = text, 1...count = suggestions).
+    static func rowMove(index: Int, step: Int, count: Int) -> RowMove {
+        let target = index + step
+        if target < 0 { return .previousRock }
+        if target > count { return .nextRock }
+        return .option(target)
+    }
+
+    // MARK: - Branching
+
+    /// Showing an older revision (pulled down in history).
+    var isViewingOlderRevision: Bool { canGoForward }
+
+    /// Starts a new rock from `text` (acting on an older revision) and returns
+    /// the original to its latest revision, untouched.
+    func branch(to text: String) -> Rock.ID? {
+        guard let rock else { return nil }
+        let latest = rock.revisions.count - 1
+        guard let branched = store.add(text: text) else { return nil }
+        store.showRevision(rockID, index: latest)
+        self.text = self.rock?.text ?? self.text
+        optionIndex = 0
+        return branched.id
+    }
+
     // MARK: - Center button
 
     enum PrimaryAction: Equatable {
@@ -94,7 +129,9 @@ final class RockEditorViewModel: ObservableObject {
 
     /// Saves typed changes as a new revision. Empty text is not saved.
     func commit() {
-        guard let rock, !isDeleted, text != rock.text else { return }
+        // Edits on an older revision become a branch (explicit, confirmed), never
+        // a silent revision of the original.
+        guard let rock, !isDeleted, text != rock.text, !isViewingOlderRevision else { return }
         store.revise(rockID, to: text, source: .edited)
     }
 

@@ -37,13 +37,20 @@ struct HomeView<Groups: View>: View {
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             } else if let rock = currentRock {
-                RockCanvas(rockID: rock.id, store: rockStore) {
-                    withAnimation(.snappy) { composing = true }
-                } onDeleted: {
-                    rockID = nil
-                }
-                .id(rock.id)
-                .transition(.opacity)
+                let rocks = rockStore.rocks
+                let i = rocks.firstIndex { $0.id == rock.id } ?? 0
+                RockCanvas(rockID: rock.id, store: rockStore,
+                           previousRockText: i > 0 ? rocks[i - 1].text : nil,
+                           nextRockText: i + 1 < rocks.count ? rocks[i + 1].text : nil,
+                           onNewRock: { withAnimation(.snappy) { composing = true } },
+                           onDeleted: { rockID = nil },
+                           onMove: { delta in
+                               let target = i + delta
+                               if rocks.indices.contains(target) { rockID = rocks[target].id }
+                           },
+                           onOpenRock: { rockID = $0 })
+                    .id(rock.id)
+                    .transition(.identity)
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) { topBar }

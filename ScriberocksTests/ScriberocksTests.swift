@@ -404,3 +404,77 @@ struct PrimaryActionTests {
         #expect(vm.primaryAction(isTyping: true) == .done)
     }
 }
+
+/// One row, stories-style: a rock's text, then its suggestions; past the last
+/// suggestion is the next (older) rock, before the text the previous (newer).
+struct RowMoveTests {
+    @Test func stepsWithinARockStayInIt() {
+        #expect(RockEditorViewModel.rowMove(index: 0, step: 1, count: 3) == .option(1))
+        #expect(RockEditorViewModel.rowMove(index: 2, step: -1, count: 3) == .option(1))
+    }
+
+    @Test func pastTheEndsMovesBetweenRocks() {
+        #expect(RockEditorViewModel.rowMove(index: 3, step: 1, count: 3) == .nextRock)
+        #expect(RockEditorViewModel.rowMove(index: 0, step: -1, count: 3) == .previousRock)
+        #expect(RockEditorViewModel.rowMove(index: 0, step: 1, count: 0) == .nextRock, "no suggestions: straight to the next rock")
+    }
+
+    @Test func onlyTheOuterEndsResist() {
+        #expect(PageSwipe.offset(drag: 90, atStart: true, atEnd: false) == 30)
+        #expect(PageSwipe.offset(drag: 90, atStart: false, atEnd: false) == 90, "a newer rock is there")
+        #expect(PageSwipe.offset(drag: -90, atStart: false, atEnd: true) == -30)
+    }
+}
+
+/// Vertical pulls move through revision history (Populist's pull rules): only
+/// once the drag latches vertical, only from the scroll edge, past a threshold.
+struct RevisionPullTests {
+    @Test func aPullDownAtTheTopGoesToTheOlderRevision() {
+        var s = PageSwipe()
+        _ = s.update(CGSize(width: 1, height: 12))
+        #expect(s.pull(CGSize(width: 2, height: 80)) == 80)
+        #expect(s.pullStep(translation: CGSize(width: 4, height: 130), atTop: true, atBottom: false) == -1)
+    }
+
+    @Test func aPullUpAtTheBottomGoesToTheNewerRevision() {
+        var s = PageSwipe()
+        _ = s.update(CGSize(width: 0, height: -12))
+        #expect(s.pullStep(translation: CGSize(width: 0, height: -130), atTop: false, atBottom: true) == 1)
+    }
+
+    @Test func noPullMidScrollOrShortOrSideways() {
+        var s = PageSwipe()
+        _ = s.update(CGSize(width: 0, height: 12))
+        #expect(s.pullStep(translation: CGSize(width: 0, height: 130), atTop: false, atBottom: false) == 0, "mid-scroll")
+        #expect(s.pullStep(translation: CGSize(width: 0, height: 40), atTop: true, atBottom: false) == 0, "too short")
+        var h = PageSwipe()
+        _ = h.update(CGSize(width: 12, height: 0))
+        #expect(h.pull(CGSize(width: 80, height: 10)) == nil, "a horizontal latch is not a pull")
+        #expect(h.pullStep(translation: CGSize(width: 0, height: 130), atTop: true, atBottom: false) == 0)
+    }
+}
+
+/// Acting on an older revision branches into a new rock; the original stays.
+@MainActor
+struct BranchTests {
+    @Test func branchingStartsANewRockAndLeavesTheOriginalAtItsLatest() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "rocks-\(UUID()).json")
+        let store = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: UserDefaults(suiteName: "br-\(UUID())")!)
+        let rock = try #require(store.add(text: "first"))
+        store.revise(rock.id, to: "second", source: .edited)
+        let vm = RockEditorViewModel(rockID: rock.id, store: store)
+        vm.goBack()
+        #expect(vm.isViewingOlderRevision && vm.text == "first")
+        let newID = try #require(vm.branch(to: "first, then a fork"))
+        #expect(store.rocks.first?.id == newID && store.rocks.first?.text == "first, then a fork")
+        let original = try #require(store.rocks.first { $0.id == rock.id })
+        #expect(original.text == "second" && original.revisions.count == 2, "original untouched, back at its latest")
+    }
+
+    @Test func onTheLatestRevisionThereIsNothingToBranchFrom() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "rocks-\(UUID()).json")
+        let store = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: UserDefaults(suiteName: "br-\(UUID())")!)
+        let rock = try #require(store.add(text: "only"))
+        #expect(!RockEditorViewModel(rockID: rock.id, store: store).isViewingOlderRevision)
+    }
+}
