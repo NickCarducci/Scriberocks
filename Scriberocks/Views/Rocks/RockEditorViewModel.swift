@@ -4,11 +4,6 @@ import Combine
 final class RockEditorViewModel: ObservableObject {
     /// The text being edited; becomes a new revision on commit.
     @Published var text: String
-    @Published var isDiamond: Bool {
-        didSet {
-            if let rock, rock.isDiamond != isDiamond { store.toggleDiamond(rock) }
-        }
-    }
     @Published private(set) var isDeleted = false
     /// Inline suggestions: 0 is the current text, 1...n the engine's options.
     /// Swiping only previews; `saveOption` makes the previewed one a revision.
@@ -23,7 +18,6 @@ final class RockEditorViewModel: ObservableObject {
         self.store = store
         let rock = store.rocks.first { $0.id == rockID }
         text = rock?.text ?? ""
-        isDiamond = rock?.isDiamond ?? false
         store.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)

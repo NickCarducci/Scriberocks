@@ -75,12 +75,6 @@ final class RockStore: ObservableObject {
         update(rock)
     }
 
-    func toggleDiamond(_ rock: Rock) {
-        var toggled = rock
-        toggled.isDiamond.toggle()
-        update(toggled)
-    }
-
     func delete(_ ids: Set<UUID>) {
         rocks.removeAll { ids.contains($0.id) }
         let now = Date.now

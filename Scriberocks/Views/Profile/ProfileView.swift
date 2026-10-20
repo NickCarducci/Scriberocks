@@ -121,7 +121,6 @@ struct ProfileView: View {
     private var journalSection: some View {
         Section("Journal") {
             LabeledContent("Rocks", value: viewModel.rockCount, format: .number)
-            LabeledContent("Diamonds", value: viewModel.diamondCount, format: .number)
             ShareLink(
                 item: viewModel.csvExport,
                 preview: SharePreview("scriberocks.csv", image: Image(systemName: "tablecells"))
@@ -135,10 +134,6 @@ struct ProfileView: View {
     private var aboutSection: some View {
         Section {
             LabeledContent("Version", value: viewModel.appVersion)
-        } footer: {
-            Text("A diamond is the final draft.")
-                .frame(maxWidth: .infinity)
-                .padding(.top)
         }
     }
 }

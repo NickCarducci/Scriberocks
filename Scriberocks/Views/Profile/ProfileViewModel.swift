@@ -38,7 +38,6 @@ final class ProfileViewModel: ObservableObject {
     var accountTitle: String { authState.displayName ?? authState.email ?? "Signed in with Apple" }
     var accountSubtitle: String? { authState.displayName == nil ? nil : authState.email }
     var rockCount: Int { store.rocks.count }
-    var diamondCount: Int { store.rocks.filter(\.isDiamond).count }
     var isSyncing: Bool { store.isSyncing }
     var syncError: String? { store.syncError }
     var ageBracketLabel: String { childSafety.ageBracket.label }

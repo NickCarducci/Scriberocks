@@ -190,10 +190,7 @@ private struct RockPicker: View {
         NavigationStack {
             List(rocks) { rock in
                 Button { pick(rock.text) } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(rock.text).lineLimit(3).foregroundStyle(.primary)
-                        if rock.isDiamond { Label("Final draft", systemImage: "diamond.fill").font(.caption).foregroundStyle(.secondary) }
-                    }
+                    Text(rock.text).lineLimit(3).foregroundStyle(.primary)
                 }
             }
             .navigationTitle("Share a rock")

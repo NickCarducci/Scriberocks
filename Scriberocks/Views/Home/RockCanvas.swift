@@ -182,11 +182,7 @@ struct RockCanvas: View {
     private func bottomBar(_ variants: [RockVariant]) -> some View {
         let action = viewModel.primaryAction(isTyping: isTyping)
         return HStack {
-            ChromeButton(systemImage: viewModel.isDiamond ? "diamond.fill" : "diamond",
-                         label: viewModel.isDiamond ? "Final draft" : "Mark as final draft") {
-                viewModel.isDiamond.toggle()
-            }
-            .accessibilityHint("A diamond is your final draft")
+            Color.clear.frame(width: 44, height: 44)
             Spacer()
             switch action {
             case .newRock:

@@ -36,7 +36,6 @@ struct FirestoreRockSyncService: RockSyncService {
                 text: text,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                isDiamond: data["isDiamond"] as? Bool ?? false,
                 revisions: revisions,
                 revisionIndex: data["revisionIndex"] as? Int
             ))
@@ -49,7 +48,6 @@ struct FirestoreRockSyncService: RockSyncService {
             "text": rock.text,
             "createdAt": Timestamp(date: rock.createdAt),
             "updatedAt": Timestamp(date: rock.updatedAt),
-            "isDiamond": rock.isDiamond,
             "revisions": rock.revisions.map {
                 ["text": $0.text, "createdAt": Timestamp(date: $0.createdAt), "source": $0.source.rawValue] as [String: Any]
             },

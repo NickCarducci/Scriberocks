@@ -61,9 +61,7 @@ extension RockStore {
         let url = FileManager.default.temporaryDirectory.appending(path: "preview-rocks-\(UUID()).json")
         let store = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: UserDefaults(suiteName: "preview")!)
         store.add(text: "Walked the long way home. The river was loud.")
-        if let diamond = store.add(text: "A diamond is the final draft.") {
-            store.toggleDiamond(diamond)
-        }
+        store.add(text: "A second rock for previews.")
         return store
     }
 }

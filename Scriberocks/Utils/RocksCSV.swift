@@ -15,12 +15,11 @@ nonisolated struct RocksCSV: Transferable, Sendable {
 
     var csv: String {
         let formatter = ISO8601DateFormatter()
-        let header = "created_at,updated_at,status,text"
+        let header = "created_at,updated_at,text"
         let rows = rocks.map { rock in
             [
                 formatter.string(from: rock.createdAt),
                 formatter.string(from: rock.updatedAt),
-                rock.isDiamond ? "diamond" : "rock",
                 Self.escape(rock.text),
             ].joined(separator: ",")
         }

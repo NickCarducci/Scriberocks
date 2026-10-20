@@ -21,15 +21,14 @@ nonisolated struct Revision: Codable, Hashable, Sendable {
     var source: Source
 }
 
-/// One journal entry. A rock is a rough draft; marking it a diamond means
-/// it's the final draft. Every change is kept as a revision; `text` is the
-/// revision currently shown.
+/// One journal entry. Every change is kept as a revision; `text` is the
+/// revision currently shown. (Rocks saved with the old `isDiamond` flag still
+/// decode; the flag is ignored and dropped on the next save.)
 nonisolated struct Rock: Identifiable, Codable, Hashable, Sendable {
     var id: UUID
     var text: String
     var createdAt: Date
     var updatedAt: Date
-    var isDiamond: Bool
     /// Oldest first. Never empty.
     var revisions: [Revision]
     /// Which revision `text` shows.
@@ -40,7 +39,6 @@ nonisolated struct Rock: Identifiable, Codable, Hashable, Sendable {
         text: String,
         createdAt: Date = .now,
         updatedAt: Date? = nil,
-        isDiamond: Bool = false,
         revisions: [Revision]? = nil,
         revisionIndex: Int? = nil
     ) {
@@ -48,7 +46,6 @@ nonisolated struct Rock: Identifiable, Codable, Hashable, Sendable {
         self.text = text
         self.createdAt = createdAt
         self.updatedAt = updatedAt ?? createdAt
-        self.isDiamond = isDiamond
         let history = revisions.flatMap { $0.isEmpty ? nil : $0 } ?? [Revision(text: text, createdAt: createdAt, source: .written)]
         self.revisions = history
         self.revisionIndex = min(max(revisionIndex ?? history.count - 1, 0), history.count - 1)
@@ -62,7 +59,6 @@ nonisolated struct Rock: Identifiable, Codable, Hashable, Sendable {
             text: try c.decode(String.self, forKey: .text),
             createdAt: try c.decode(Date.self, forKey: .createdAt),
             updatedAt: try c.decodeIfPresent(Date.self, forKey: .updatedAt),
-            isDiamond: try c.decodeIfPresent(Bool.self, forKey: .isDiamond) ?? false,
             revisions: try c.decodeIfPresent([Revision].self, forKey: .revisions),
             revisionIndex: try c.decodeIfPresent(Int.self, forKey: .revisionIndex)
         )

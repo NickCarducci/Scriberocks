@@ -13,28 +13,9 @@ struct RockLibraryView: View {
     var body: some View {
         NavigationStack {
             List {
-                Picker("Show", selection: $viewModel.filter) {
-                    ForEach(RocksViewModel.Filter.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-
                 ForEach(viewModel.visibleRocks) { rock in
                     Button { pick(rock.id) } label: { LibraryRow(rock: rock) }
                         .buttonStyle(.plain)
-                        .swipeActions(edge: .leading) {
-                            Button {
-                                viewModel.toggleDiamond(rock)
-                            } label: {
-                                if rock.isDiamond {
-                                    Label("Back to rock", image: "rock")
-                                } else {
-                                    Label("Diamond", systemImage: "diamond")
-                                }
-                            }
-                            .tint(.accentColor)
-                        }
                 }
                 .onDelete(perform: viewModel.delete(at:))
             }
@@ -62,13 +43,7 @@ private struct LibraryRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(rock.title).font(.headline).lineLimit(1)
-                Spacer()
-                if rock.isDiamond {
-                    Image(systemName: "diamond.fill").foregroundStyle(.tint).accessibilityLabel("Diamond")
-                }
-            }
+            Text(rock.title).font(.headline).lineLimit(1)
             Text(rock.text).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
             Text(rock.createdAt, format: .dateTime.month().day().year()).font(.caption).foregroundStyle(.tertiary)
         }

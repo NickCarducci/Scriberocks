@@ -41,9 +41,9 @@ struct RockStoreTests {
     @Test func updateTouchesUpdatedAt() throws {
         let (store, _) = makeStore(defaults: freshDefaults())
         let rock = try #require(store.add(text: "draft"))
-        store.toggleDiamond(rock)
+        store.revise(rock.id, to: "revised", source: .edited)
         let updated = try #require(store.rocks.first)
-        #expect(updated.isDiamond)
+        #expect(updated.text == "revised")
         #expect(updated.updatedAt >= rock.updatedAt)
     }
 
@@ -158,11 +158,11 @@ struct RocksCSVTests {
         #expect(RocksCSV.escape("line\nbreak") == "\"line\nbreak\"")
     }
 
-    @Test func includesHeaderAndStatus() {
-        let csv = RocksCSV(rocks: [Rock(text: "x", isDiamond: true)]).csv
+    @Test func includesHeaderAndText() {
+        let csv = RocksCSV(rocks: [Rock(text: "x")]).csv
         let lines = csv.split(separator: "\n")
-        #expect(lines.first == "created_at,updated_at,status,text")
-        #expect(lines.last?.hasSuffix(",diamond,x") == true)
+        #expect(lines.first == "created_at,updated_at,text")
+        #expect(lines.last?.hasSuffix(",x") == true)
     }
 }
 
