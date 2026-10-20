@@ -37,10 +37,18 @@ struct ModerationTests {
         #expect(Moderation.visibility(of: post(author: "troll"), viewer: "w", blocked: ["troll"], reportsToHide: 2) == .hidden)
     }
 
-    @Test func joiningAsksAGuardianOnlyWhenNeededAndNotYetApproved() {
-        #expect(Moderation.joinStep(requiresGuardianApproval: false, guardianApproved: false) == .join)
-        #expect(Moderation.joinStep(requiresGuardianApproval: true, guardianApproved: false) == .askGuardian)
-        #expect(Moderation.joinStep(requiresGuardianApproval: true, guardianApproved: true) == .join)
+    /// Guardian approval is per author (PermissionKit's model: who a child
+    /// communicates with), not per group.
+    @Test func aGuardedReaderSeesOnlyApprovedAuthors() {
+        #expect(Moderation.visibility(of: post(author: "a"), viewer: "kid", blocked: [], reportsToHide: 2, approvedAuthors: []) == .needsGuardian)
+        #expect(Moderation.visibility(of: post(author: "a"), viewer: "kid", blocked: [], reportsToHide: 2, approvedAuthors: ["a"]) == .shown)
+        #expect(Moderation.visibility(of: post(author: "kid"), viewer: "kid", blocked: [], reportsToHide: 2, approvedAuthors: []) == .shown, "your own posts")
+        #expect(Moderation.visibility(of: post(author: "a"), viewer: "adult", blocked: [], reportsToHide: 2, approvedAuthors: nil) == .shown, "no guardian filter")
+    }
+
+    @Test func reportsAndBlocksStillHideApprovedAuthors() {
+        #expect(Moderation.visibility(of: post(author: "a", reportedBy: ["kid"]), viewer: "kid", blocked: [], reportsToHide: 2, approvedAuthors: ["a"]) == .hidden)
+        #expect(Moderation.visibility(of: post(author: "a"), viewer: "kid", blocked: ["a"], reportsToHide: 2, approvedAuthors: []) == .hidden)
     }
 }
 
@@ -166,40 +174,82 @@ struct GroupFeedViewModelTests {
 }
 
 @MainActor
+struct GuardedFeedTests {
+    private let group = RockGroup(id: "g", name: "Commons", about: "", reportsToHide: 2)
+
+    private func service() -> InMemoryGroupService {
+        let s = InMemoryGroupService()
+        s.seed(post("1", author: "ana"))
+        s.seed(post("2", author: "ben"))
+        s.seed(post("3", author: "ana"))
+        return s
+    }
+
+    @Test func unapprovedAuthorsAreCollapsedIntoOneRequest() async {
+        let vm = GroupFeedViewModel(group: group, service: service(), userId: "kid", displayName: "Kid", filter: StubFilter(),
+                                    requiresGuardianApproval: true, approvedAmong: { $0.intersection(["ben"]) })
+        await vm.load()
+        #expect(vm.visiblePosts.map(\.post.id) == ["2"])
+        #expect(vm.authorsAwaitingApproval.map(\.id) == ["ana"], "each hidden author once")
+        #expect(vm.hiddenForGuardianCount == 2)
+    }
+
+    @Test func approvalShowsThatAuthorsPosts() async {
+        let vm = GroupFeedViewModel(group: group, service: service(), userId: "kid", displayName: "Kid", filter: StubFilter(),
+                                    requiresGuardianApproval: true, approvedAmong: { _ in [] })
+        await vm.load()
+        #expect(vm.visiblePosts.isEmpty)
+        vm.guardianApproved(["ana"])
+        #expect(Set(vm.visiblePosts.map(\.post.id)) == ["1", "3"])
+        #expect(vm.authorsAwaitingApproval.map(\.id) == ["ben"])
+    }
+
+    @Test func withoutCommunicationLimitsEverythingShows() async {
+        let vm = GroupFeedViewModel(group: group, service: service(), userId: "kid", displayName: "Kid", filter: StubFilter(),
+                                    requiresGuardianApproval: true, approvedAmong: { _ in [] })
+        await vm.load()
+        vm.guardianNotRequired()
+        #expect(vm.visiblePosts.count == 3)
+        #expect(vm.authorsAwaitingApproval.isEmpty)
+    }
+
+    @Test func adultsAreNotFiltered() async {
+        let vm = GroupFeedViewModel(group: group, service: service(), userId: "me", displayName: "Me", filter: StubFilter())
+        await vm.load()
+        #expect(vm.visiblePosts.count == 3 && vm.authorsAwaitingApproval.isEmpty)
+    }
+}
+
+@MainActor
 struct GroupsViewModelTests {
     @Test func adultsJoinDirectly() async {
         let service = InMemoryGroupService()
         service.seedGroup(RockGroup(id: "g", name: "Commons", about: "", reportsToHide: 2))
         let vm = GroupsViewModel(service: service, userId: "me", displayName: "Me")
         await vm.load()
-        #expect(await vm.join(vm.groups[0], requiresGuardianApproval: false) == .joined)
+        #expect(await vm.join(vm.groups[0]) == .joined)
         #expect(vm.isMember("g"))
     }
 
-    @Test func minorsAskAGuardianUnlessAlreadyApproved() async {
+    @Test func minorsJoinDirectlyToo() async {
         let service = InMemoryGroupService()
         service.seedGroup(RockGroup(id: "g", name: "Commons", about: "", reportsToHide: 1))
-        let vm = GroupsViewModel(service: service, userId: "me", displayName: "Me", guardianApproved: { _ in false })
+        let vm = GroupsViewModel(service: service, userId: "kid", displayName: "Kid")
         await vm.load()
-        #expect(await vm.join(vm.groups[0], requiresGuardianApproval: true) == .askGuardian)
-        #expect(!vm.isMember("g"))
-        await vm.guardianApproved(groupId: "g")
+        #expect(await vm.join(vm.groups[0]) == .joined)
         #expect(vm.isMember("g"))
-        #expect(service.members["g"]?["me"] == true, "joined with guardian approval recorded")
-
-        let approved = GroupsViewModel(service: InMemoryGroupService(), userId: "me", displayName: "Me", guardianApproved: { _ in true })
-        #expect(await approved.join(RockGroup(id: "h", name: "H", about: "", reportsToHide: 1), requiresGuardianApproval: true) == .joined)
     }
 
     @Test func joiningNeedsSignIn() async {
         let vm = GroupsViewModel(service: InMemoryGroupService(), userId: nil, displayName: nil)
-        #expect(await vm.join(RockGroup(id: "g", name: "G", about: "", reportsToHide: 2), requiresGuardianApproval: false) == .needsSignIn)
+        #expect(await vm.join(RockGroup(id: "g", name: "G", about: "", reportsToHide: 2)) == .needsSignIn)
     }
 }
 
 struct GuardianApprovalTests {
-    @Test func groupHandlesRoundTrip() {
-        #expect(GuardianApproval.groupId(fromHandle: GuardianApproval.handleValue(for: "commons")) == "commons")
-        #expect(GuardianApproval.groupId(fromHandle: "+15555550100") == nil)
+    @Test func authorHandlesAreAccountIdsNotNames() {
+        #expect(GuardianApproval.authorId(fromHandle: GuardianApproval.handleValue(forAuthor: "uid123")) == "uid123")
+        #expect(GuardianApproval.authorId(fromHandle: "+15555550100") == nil)
+        #expect(GuardianApproval.handleValue(forAuthor: "uid123") != GuardianApproval.handleValue(forAuthor: "Ana"))
     }
 }

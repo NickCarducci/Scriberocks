@@ -6,29 +6,26 @@ nonisolated enum PostVisibility: Equatable, Sendable {
     /// The viewer's own post, hidden from others pending review.
     case awaitingReview
     case hidden
-}
-
-/// Whether joining a group can happen now or needs a guardian's OK.
-nonisolated enum JoinStep: Equatable, Sendable {
-    case join
-    case askGuardian
+    /// The viewer needs a guardian's approval for this author (PermissionKit).
+    case needsGuardian
 }
 
 /// App Review Guideline 1.2 safeguards, as pure rules: reports hide a post at
 /// once for the reporter and for everyone at the group's threshold until the
-/// moderator keeps it; blocked authors are hidden. Minors (or anyone under
-/// Communication Limits) join groups with a guardian's approval rather than
-/// getting a reduced app.
+/// moderator keeps it; blocked authors are hidden. Readers under
+/// Communication Limits see posts from authors a guardian approved (per
+/// person, as PermissionKit is designed), plus their own; the rest are
+/// collapsed into one request — never a reduced app or a locked group.
 nonisolated enum Moderation {
-    static func visibility(of post: GroupPost, viewer: String?, blocked: Set<String>, reportsToHide: Int) -> PostVisibility {
+    /// `approvedAuthors` is nil when the viewer needs no guardian approval.
+    static func visibility(of post: GroupPost, viewer: String?, blocked: Set<String>, reportsToHide: Int,
+                           approvedAuthors: Set<String>? = nil) -> PostVisibility {
         if blocked.contains(post.authorId) { return .hidden }
         if let viewer, post.reportedBy.contains(viewer) { return .hidden }
+        let isMine = post.authorId == viewer
+        if let approvedAuthors, !isMine, !approvedAuthors.contains(post.authorId) { return .needsGuardian }
         let hiddenByReports = post.review != .kept && Set(post.reportedBy).count >= max(reportsToHide, 1)
         guard hiddenByReports else { return .shown }
-        return post.authorId == viewer ? .awaitingReview : .hidden
-    }
-
-    static func joinStep(requiresGuardianApproval: Bool, guardianApproved: Bool) -> JoinStep {
-        requiresGuardianApproval && !guardianApproved ? .askGuardian : .join
+        return isMine ? .awaitingReview : .hidden
     }
 }

@@ -11,6 +11,12 @@ nonisolated enum ShareOutcome: Equatable, Sendable {
     case failed(String)
 }
 
+/// An author whose posts a guarded reader can't see yet.
+nonisolated struct AuthorRef: Identifiable, Hashable, Sendable {
+    var id: String
+    var name: String
+}
+
 nonisolated struct FeedItem: Identifiable, Hashable, Sendable {
     var post: GroupPost
     var visibility: PostVisibility
@@ -19,7 +25,8 @@ nonisolated struct FeedItem: Identifiable, Hashable, Sendable {
 
 /// One group's posts: sharing (sign-in, terms, filter), and the reporter's
 /// tools — report (hidden for the reporter at once), block, and delete for
-/// the author.
+/// the author. Readers under Communication Limits see approved authors only;
+/// the rest collapse into one guardian request listing those authors.
 @MainActor
 final class GroupFeedViewModel: ObservableObject {
     @Published private(set) var posts: [GroupPost] = []
@@ -27,24 +34,55 @@ final class GroupFeedViewModel: ObservableObject {
     @Published private(set) var termsVersion: Int?
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
+    /// Authors a guardian approved; nil when the reader needs no approval.
+    @Published private(set) var approvedAuthors: Set<String>?
 
     let group: RockGroup
     let userId: String?
     private let displayName: String
     private let service: GroupService
     private let filter: ContentFilter
+    /// Which of these author IDs a guardian already approved (PermissionKit known handles).
+    private let approvedAmong: (Set<String>) async -> Set<String>
 
-    init(group: RockGroup, service: GroupService, userId: String?, displayName: String?, filter: ContentFilter = LayeredFilter.standard) {
+    init(group: RockGroup, service: GroupService, userId: String?, displayName: String?, filter: ContentFilter = LayeredFilter.standard,
+         requiresGuardianApproval: Bool = false, approvedAmong: @escaping (Set<String>) async -> Set<String> = { $0 }) {
         self.group = group
         self.service = service
         self.userId = userId
         self.displayName = displayName ?? "Scribe"
         self.filter = filter
+        self.approvedAmong = approvedAmong
+        approvedAuthors = requiresGuardianApproval ? [] : nil
+    }
+
+    private var items: [FeedItem] {
+        posts.map { FeedItem(post: $0, visibility: Moderation.visibility(of: $0, viewer: userId, blocked: blocked,
+                                                                         reportsToHide: group.reportsToHide, approvedAuthors: approvedAuthors)) }
     }
 
     var visiblePosts: [FeedItem] {
-        posts.map { FeedItem(post: $0, visibility: Moderation.visibility(of: $0, viewer: userId, blocked: blocked, reportsToHide: group.reportsToHide)) }
-            .filter { $0.visibility != .hidden }
+        items.filter { $0.visibility == .shown || $0.visibility == .awaitingReview }
+    }
+
+    var hiddenForGuardianCount: Int { items.filter { $0.visibility == .needsGuardian }.count }
+
+    /// Each hidden author once, most recent first.
+    var authorsAwaitingApproval: [AuthorRef] {
+        var seen = Set<String>()
+        return items.filter { $0.visibility == .needsGuardian }.compactMap {
+            seen.insert($0.post.authorId).inserted ? AuthorRef(id: $0.post.authorId, name: $0.post.authorName) : nil
+        }
+    }
+
+    /// A guardian approved these authors.
+    func guardianApproved(_ authorIds: Set<String>) {
+        approvedAuthors?.formUnion(authorIds)
+    }
+
+    /// Communication Limits isn't on: nothing to approve.
+    func guardianNotRequired() {
+        approvedAuthors = nil
     }
 
     var hasAcceptedTerms: Bool { (termsVersion ?? 0) >= CommunityTerms.version }
@@ -54,6 +92,9 @@ final class GroupFeedViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             posts = try await service.posts(groupId: group.id)
+            if approvedAuthors != nil {
+                guardianApproved(await approvedAmong(Set(posts.map(\.authorId))))
+            }
             if let userId {
                 blocked = try await service.blockedUsers(userId: userId)
                 termsVersion = try await service.acceptedTermsVersion(userId: userId)

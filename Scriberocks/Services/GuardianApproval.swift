@@ -2,33 +2,38 @@ import Foundation
 import PermissionKit
 import UIKit
 
-/// Guardian approval for joining a group, through PermissionKit: the question
-/// goes to the family's parents or guardians in Messages; an approved group
-/// becomes a known handle under Communication Limits. Each group is a custom
-/// handle, "scriberocks-group:<id>", with the connect action.
+/// Guardian approval per author, through PermissionKit (as Populist does):
+/// Communication Limits are about who a child communicates with, so a guarded
+/// reader sees posts from approved authors and asks about the rest in one
+/// request, which goes to the family's guardians in Messages. Handles are
+/// account IDs ("scriberocks-user:<uid>"), never display names, so a name
+/// can't be borrowed to slip past approval; the name is only shown.
 nonisolated enum GuardianApproval {
-    static let prefix = "scriberocks-group:"
+    static let prefix = "scriberocks-user:"
 
-    static func handleValue(for groupId: String) -> String { prefix + groupId }
+    static func handleValue(forAuthor id: String) -> String { prefix + id }
 
-    static func groupId(fromHandle value: String) -> String? {
+    static func authorId(fromHandle value: String) -> String? {
         value.hasPrefix(prefix) ? String(value.dropFirst(prefix.count)) : nil
     }
 
-    static func handle(for groupId: String) -> CommunicationHandle {
-        CommunicationHandle(value: handleValue(for: groupId), kind: .custom)
+    static func handle(forAuthor id: String) -> CommunicationHandle {
+        CommunicationHandle(value: handleValue(forAuthor: id), kind: .custom)
     }
 
-    static func question(for group: RockGroup) -> PermissionQuestion<CommunicationTopic> {
-        var name = PersonNameComponents()
-        name.nickname = "\(group.name) (Scriberocks group)"
-        let person = CommunicationTopic.PersonInformation(handle: handle(for: group.id), nameComponents: name)
-        return PermissionQuestion(communicationTopic: CommunicationTopic(personInformation: [person], actions: [.connect]))
+    static func question(for authors: [AuthorRef]) -> PermissionQuestion<CommunicationTopic> {
+        let people = authors.map { author in
+            var name = PersonNameComponents()
+            name.nickname = author.name
+            return CommunicationTopic.PersonInformation(handle: handle(forAuthor: author.id), nameComponents: name)
+        }
+        return PermissionQuestion(communicationTopic: CommunicationTopic(personInformation: people, actions: [.communicate]))
     }
 
-    /// Already approved by a guardian (a known handle).
-    static func isApproved(groupId: String) async -> Bool {
-        await CommunicationLimits.current.isKnownHandle(handle(for: groupId))
+    /// The author IDs among these that a guardian already approved.
+    static func approved(among ids: Set<String>) async -> Set<String> {
+        let known = await CommunicationLimits.current.knownHandles(in: Set(ids.map(handle(forAuthor:))))
+        return Set(known.compactMap { authorId(fromHandle: $0.value) })
     }
 
     enum AskResult: Equatable {
@@ -40,13 +45,13 @@ nonisolated enum GuardianApproval {
     }
 
     @MainActor
-    static func ask(for group: RockGroup) async -> AskResult {
+    static func ask(about authors: [AuthorRef]) async -> AskResult {
         guard #available(iOS 26.2, *) else { return .unavailable("Update iOS to ask a parent or guardian.") }
         guard let presenter = UIApplication.shared.connectedScenes
             .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController })
             .first.map(topmost) else { return .unavailable("Couldn't show the request.") }
         do {
-            try await AskCenter.shared.ask(question(for: group), in: presenter)
+            try await AskCenter.shared.ask(question(for: authors), in: presenter)
             return .sent
         } catch let error as AskError {
             if case .communicationLimitsNotEnabled = error { return .notNeeded }
@@ -56,15 +61,14 @@ nonisolated enum GuardianApproval {
         }
     }
 
-    /// Group IDs a guardian approves, as answers arrive.
-    static func approvals() -> AsyncStream<String> {
+    /// Author IDs a guardian approves, as answers arrive.
+    static func approvals() -> AsyncStream<Set<String>> {
         AsyncStream { continuation in
             let task = Task {
                 func handle(_ response: PermissionResponse<CommunicationTopic>) {
                     guard response.choice.answer == .approval else { return }
-                    for person in response.question.topic.personInformation {
-                        if let id = groupId(fromHandle: person.handle.value) { continuation.yield(id) }
-                    }
+                    let ids = Set(response.question.topic.personInformation.compactMap { authorId(fromHandle: $0.handle.value) })
+                    if !ids.isEmpty { continuation.yield(ids) }
                 }
                 if #available(iOS 26.2, *) {
                     for await response in AskCenter.shared.responses(for: CommunicationTopic.self) { handle(response) }

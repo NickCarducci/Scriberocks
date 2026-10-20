@@ -1,22 +1,32 @@
 import SwiftUI
 
 /// A group's posts. Share a rock (terms once, then the content filter);
-/// report, block, or delete your own from each post's menu.
+/// report, block, or delete your own from each post's menu. Readers under
+/// Communication Limits see approved authors; the rest collapse into one row
+/// that asks a parent or guardian about those writers.
 struct GroupFeedView: View {
     @StateObject private var viewModel: GroupFeedViewModel
     @EnvironmentObject private var rockStore: RockStore
+    @State private var askingGuardian = false
     @State private var choosingRock = false
     @State private var showingTerms = false
     @State private var pendingText: String?
     @State private var notice: String?
     @State private var reporting: GroupPost?
 
-    init(group: RockGroup, service: GroupService, userId: String?, displayName: String?) {
-        _viewModel = StateObject(wrappedValue: GroupFeedViewModel(group: group, service: service, userId: userId, displayName: displayName))
+    init(group: RockGroup, service: GroupService, userId: String?, displayName: String?, requiresGuardianApproval: Bool) {
+        _viewModel = StateObject(wrappedValue: GroupFeedViewModel(
+            group: group, service: service, userId: userId, displayName: displayName,
+            requiresGuardianApproval: requiresGuardianApproval,
+            approvedAmong: { await GuardianApproval.approved(among: $0) }
+        ))
     }
 
     var body: some View {
         List {
+            if viewModel.hiddenForGuardianCount > 0 {
+                guardianRow
+            }
             ForEach(viewModel.visiblePosts) { item in
                 PostRow(item: item)
                     .contextMenu { menu(for: item.post) }
@@ -36,6 +46,9 @@ struct GroupFeedView: View {
             }
         }
         .task { await viewModel.load() }
+        .task {
+            for await ids in GuardianApproval.approvals() { viewModel.guardianApproved(ids) }
+        }
         .refreshable { await viewModel.load() }
         .sheet(isPresented: $choosingRock) {
             RockPicker(rocks: rockStore.rocks) { text in
@@ -67,6 +80,32 @@ struct GroupFeedView: View {
         } message: {
             Text(notice ?? viewModel.errorMessage ?? "")
         }
+    }
+
+    private var guardianRow: some View {
+        let authors = viewModel.authorsAwaitingApproval
+        let count = viewModel.hiddenForGuardianCount
+        return VStack(alignment: .leading, spacing: 8) {
+            Label("\(count) \(count == 1 ? "post" : "posts") from \(authors.count) \(authors.count == 1 ? "writer" : "writers") you haven't been approved to see",
+                  systemImage: "person.2.badge.key")
+                .font(.subheadline)
+            Button {
+                askingGuardian = true
+                Task {
+                    switch await GuardianApproval.ask(about: authors) {
+                    case .sent: notice = "Request sent. Their posts appear when a parent or guardian approves."
+                    case .notNeeded: viewModel.guardianNotRequired()
+                    case .unavailable(let message): notice = message
+                    }
+                    askingGuardian = false
+                }
+            } label: {
+                Label("Ask a parent or guardian", systemImage: "paperplane")
+            }
+            .buttonStyle(.bordered)
+            .disabled(askingGuardian)
+        }
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder

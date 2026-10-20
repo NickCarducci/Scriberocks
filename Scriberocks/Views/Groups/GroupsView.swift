@@ -1,22 +1,17 @@
 import SwiftUI
 
-/// Groups are forums. Signed-in members join (minors with a guardian's
-/// approval through PermissionKit) and share rocks.
+/// Groups are forums. Signed-in members join and share rocks; guardian
+/// approval, where it applies, is per author inside a group.
 struct GroupsView: View {
     @StateObject private var viewModel: GroupsViewModel
     @EnvironmentObject private var childSafety: ChildSafetyManager
-    @EnvironmentObject private var rockStore: RockStore
-    @State private var asking: RockGroup?
     @State private var notice: String?
     @State private var path: [RockGroup] = []
     let service: GroupService
 
     init(service: GroupService, userId: String?, displayName: String?) {
         self.service = service
-        _viewModel = StateObject(wrappedValue: GroupsViewModel(
-            service: service, userId: userId, displayName: displayName,
-            guardianApproved: { await GuardianApproval.isApproved(groupId: $0) }
-        ))
+        _viewModel = StateObject(wrappedValue: GroupsViewModel(service: service, userId: userId, displayName: displayName))
     }
 
     var body: some View {
@@ -33,7 +28,8 @@ struct GroupsView: View {
             }
             .navigationTitle("Groups")
             .navigationDestination(for: RockGroup.self) { group in
-                GroupFeedView(group: group, service: service, userId: viewModel.userId, displayName: viewModel.displayName)
+                GroupFeedView(group: group, service: service, userId: viewModel.userId, displayName: viewModel.displayName,
+                              requiresGuardianApproval: requiresGuardianApproval)
             }
         }
         .task {
@@ -46,27 +42,19 @@ struct GroupsView: View {
             }
             #endif
         }
-        .task {
-            for await groupId in GuardianApproval.approvals() {
-                await viewModel.guardianApproved(groupId: groupId)
-            }
-        }
-        .sheet(item: $asking) { group in
-            GuardianRequestView(group: group) { result in
-                asking = nil
-                switch result {
-                case .sent: notice = "Request sent. You'll join \(group.name) when a parent or guardian approves."
-                case .notNeeded: Task { await viewModel.guardianApproved(groupId: group.id) }
-                case .unavailable(let message): notice = message
-                }
-            }
-            .presentationDetents([.medium])
-        }
         .alert("Groups", isPresented: Binding(get: { notice != nil || viewModel.errorMessage != nil }, set: { if !$0 { notice = nil; viewModel.errorMessage = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(notice ?? viewModel.errorMessage ?? "")
         }
+    }
+
+    private var requiresGuardianApproval: Bool {
+        #if DEBUG
+        // Screenshot/QA hook: `-guardedReader` reads as someone under Communication Limits.
+        if ProcessInfo.processInfo.arguments.contains("-guardedReader") { return true }
+        #endif
+        return childSafety.requiresGuardianApproval
     }
 
     private var list: some View {
@@ -103,38 +91,11 @@ struct GroupsView: View {
     }
 
     private func join(_ group: RockGroup) async {
-        switch await viewModel.join(group, requiresGuardianApproval: childSafety.requiresGuardianApproval) {
+        switch await viewModel.join(group) {
         case .joined: break
-        case .askGuardian: asking = group
         case .needsSignIn: notice = "Sign in on the Profile tab to join groups."
         case .failed(let message): notice = message
         }
     }
 }
 
-/// Explains the guardian step and sends the PermissionKit request.
-private struct GuardianRequestView: View {
-    let group: RockGroup
-    let done: (GuardianApproval.AskResult) -> Void
-    @State private var sending = false
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "person.2.badge.key").font(.largeTitle).foregroundStyle(.tint)
-            Text("Ask to join \(group.name)").font(.title3.bold())
-            Text("A parent or guardian approves joining groups. They'll get your request in Messages.")
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-            Button {
-                sending = true
-                Task { done(await GuardianApproval.ask(for: group)) }
-            } label: {
-                Label("Ask a parent or guardian", systemImage: "paperplane")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(sending)
-        }
-        .padding(24)
-    }
-}
