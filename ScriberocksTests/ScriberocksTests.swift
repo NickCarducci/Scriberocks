@@ -492,19 +492,19 @@ struct RevisionChoiceTests {
         return (RockEditorViewModel(rockID: rock.id, store: store), store, rock.id)
     }
 
-    @Test func choicesAreNewestFirstWithTheLatestMarked() throws {
+    @Test func choicesRunOldestToNewestWithTheLatestMarked() throws {
         let (vm, _, _) = try editor()
         let choices = vm.revisionChoices
-        #expect(choices.map(\.index) == [2, 1, 0])
-        #expect(choices.map(\.isLatest) == [true, false, false])
-        #expect(choices.first?.isShowing == true)
+        #expect(choices.map(\.index) == [0, 1, 2])
+        #expect(choices.map(\.isLatest) == [false, false, true])
+        #expect(choices.last?.isShowing == true)
     }
 
     @Test func pickingADateShowsThatVersion() throws {
         let (vm, _, _) = try editor()
         vm.showRevision(0)
         #expect(vm.text == "one" && vm.isViewingOlderRevision)
-        #expect(vm.revisionChoices.last?.isShowing == true)
+        #expect(vm.revisionChoices.first?.isShowing == true)
     }
 
     @Test func aRockOpensOnItsNewestVersion() throws {
@@ -513,5 +513,28 @@ struct RevisionChoiceTests {
         let reopened = RockEditorViewModel(rockID: id, store: store)
         reopened.showLatest()
         #expect(reopened.text == "three" && !reopened.isViewingOlderRevision)
+    }
+}
+
+
+/// Suggestions are cached (least recently used goes first), so swiping back
+/// to a rock or version shows them instantly.
+struct SuggestionCacheTests {
+    @Test func keepsTheMostRecentlyUsed() {
+        var cache = SuggestionCache<Int>(capacity: 2)
+        cache["a"] = 1
+        cache["b"] = 2
+        _ = cache["a"]
+        cache["c"] = 3
+        #expect(cache["a"] == 1 && cache["c"] == 3)
+        #expect(cache["b"] == nil, "least recently used was evicted")
+    }
+
+    @Test func overwritingKeepsOneEntry() {
+        var cache = SuggestionCache<Int>(capacity: 2)
+        cache["a"] = 1
+        cache["a"] = 2
+        cache["b"] = 3
+        #expect(cache["a"] == 2 && cache.count == 2)
     }
 }

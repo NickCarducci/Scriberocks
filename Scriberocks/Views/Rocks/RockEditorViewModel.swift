@@ -59,11 +59,11 @@ final class RockEditorViewModel: ObservableObject {
         var id: Int { index }
     }
 
-    /// Saved versions, newest first.
+    /// Saved versions, oldest to newest (time ascending).
     var revisionChoices: [RevisionChoice] {
         guard let rock else { return [] }
         let last = rock.revisions.count - 1
-        return rock.revisions.indices.reversed().map {
+        return rock.revisions.indices.map {
             RevisionChoice(index: $0, date: rock.revisions[$0].createdAt, isLatest: $0 == last, isShowing: $0 == rock.revisionIndex)
         }
     }

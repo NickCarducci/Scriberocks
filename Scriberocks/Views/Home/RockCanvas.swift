@@ -91,6 +91,12 @@ struct RockCanvas: View {
         }
         #endif
         .onAppear { viewModel.showLatest() }
+        .task(id: prefetchKey) {
+            // Prepare what's likely next: this rock's other versions, the neighboring rocks.
+            guard case .ready = suggestions.state, let rock = viewModel.rock else { return }
+            let versions = rock.revisions.map(\.text).filter { $0 != rock.text }
+            suggestions.prefetch([previousRockText, nextRockText].compactMap { $0 } + versions.reversed())
+        }
         .onDisappear(perform: viewModel.commit)
         .onChange(of: isEditing) { _, editing in
             if !editing {
@@ -104,6 +110,10 @@ struct RockCanvas: View {
                 isTyping = false
             }
         }
+    }
+
+    private var prefetchKey: String {
+        "\(viewModel.rock?.text.hashValue ?? 0)-\(suggestions.state.isReady)"
     }
 
     private var variants: [RockVariant] {
@@ -121,7 +131,7 @@ struct RockCanvas: View {
                 // Before "no suggestions": this warning matters more.
                 Label("Older version · changes branch a new rock", systemImage: "arrow.triangle.branch")
             } else if case .loading = suggestions.state {
-                Label("Finding suggestions…", systemImage: "sparkles")
+                CrabLoader()
             } else if variants.isEmpty {
                 Text("No suggestions for this one yet")
             } else if viewModel.optionIndex == 0 {
@@ -383,4 +393,29 @@ struct RockCanvas: View {
         return out
     }
 
+}
+
+/// Tiny Rust crabs scuttle while the language engine (written in Rust) loads.
+struct CrabLoader: View {
+    var body: some View {
+        TimelineView(.animation) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 6) {
+                ForEach(0..<3, id: \.self) { i in
+                    Text("🦀")
+                        .font(.footnote)
+                        .offset(x: CGFloat(sin(t * 6 + Double(i) * 1.3)) * 4,
+                                y: CGFloat(abs(sin(t * 9 + Double(i)))) * -2)
+                        .scaleEffect(x: cos(t * 3 + Double(i)) > 0 ? 1 : -1, y: 1)
+                }
+                Text("Warming up the crabs…")
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Loading suggestions")
+    }
+}
+
+extension SuggestionEngine.State {
+    var isReady: Bool { if case .ready = self { return true } else { return false } }
 }
