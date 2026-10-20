@@ -52,6 +52,7 @@ struct RockCanvas: View {
             } else {
                 pager(variants)
             }
+            revisionMenu
             indicator(variants)
             bottomBar(variants)
         }
@@ -89,6 +90,7 @@ struct RockCanvas: View {
             }
         }
         #endif
+        .onAppear { viewModel.showLatest() }
         .onDisappear(perform: viewModel.commit)
         .onChange(of: isEditing) { _, editing in
             if !editing {
@@ -115,9 +117,9 @@ struct RockCanvas: View {
         Group {
             if isTyping {
                 Text(viewModel.isViewingOlderRevision ? "Editing an older version · saving branches a new rock" : "Editing")
-            } else if viewModel.isViewingOlderRevision, viewModel.optionIndex == 0, let label = viewModel.revisionLabel {
+            } else if viewModel.isViewingOlderRevision, viewModel.optionIndex == 0 {
                 // Before "no suggestions": this warning matters more.
-                Label("Revision \(label) · changes branch a new rock", systemImage: "arrow.triangle.branch")
+                Label("Older version · changes branch a new rock", systemImage: "arrow.triangle.branch")
             } else if case .loading = suggestions.state {
                 Label("Finding suggestions…", systemImage: "sparkles")
             } else if variants.isEmpty {
@@ -133,8 +135,48 @@ struct RockCanvas: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(.thinMaterial, in: .capsule)
-        .padding(.vertical, 8)
+        .padding(.top, viewModel.revisionChoices.count > 1 && !isTyping ? 4 : 8)
+        .padding(.bottom, 8)
         .animation(.snappy, value: viewModel.optionIndex)
+    }
+
+    /// Saved versions by date and time, newest first; the one showing is checked.
+    @ViewBuilder
+    private var revisionMenu: some View {
+        let choices = viewModel.revisionChoices
+        if choices.count > 1, !isTyping, let showing = choices.first(where: \.isShowing) {
+            Menu {
+                Picker("Version", selection: Binding(get: { showing.index }, set: { i in withAnimation(.snappy) { viewModel.showRevision(i) } })) {
+                    ForEach(choices) { choice in
+                        Text(choice.isLatest ? "Latest · \(Self.when(choice.date))" : Self.when(choice.date)).tag(choice.index)
+                    }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.arrow.circlepath")
+                    Text(showing.isLatest ? "Latest · \(Self.when(showing.date))" : Self.when(showing.date))
+                    if !showing.isLatest {
+                        Text("branches").foregroundStyle(.tint)
+                    }
+                    Image(systemName: "chevron.up.chevron.down").font(.caption2)
+                }
+                .font(.footnote.weight(.semibold).monospacedDigit())
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(.thinMaterial, in: .capsule)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 8)
+            .accessibilityLabel("Version: \(showing.isLatest ? "latest, " : "")\(Self.when(showing.date))")
+            .accessibilityHint("Choose a saved version. Changes to an older version branch into a new rock.")
+        }
+    }
+
+    /// "Today, 5:19 PM" or "Oct 12, 3:04 PM".
+    static func when(_ date: Date) -> String {
+        Calendar.current.isDateInToday(date)
+            ? "Today, " + date.formatted(date: .omitted, time: .shortened)
+            : date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
     }
 
     private func bottomBar(_ variants: [RockVariant]) -> some View {
@@ -164,12 +206,6 @@ struct RockCanvas: View {
             }
             Spacer()
             Menu {
-                if let label = viewModel.revisionLabel {
-                    Section("Revision \(label)") {
-                        Button("Previous revision", systemImage: "chevron.left", action: viewModel.goBack).disabled(!viewModel.canGoBack)
-                        Button("Next revision", systemImage: "chevron.right", action: viewModel.goForward).disabled(!viewModel.canGoForward)
-                    }
-                }
                 Button("Edit text", systemImage: "pencil") { isTyping = true }
                 Button("Delete rock", systemImage: "trash", role: .destructive) { confirmDelete = true }
             } label: {
@@ -288,13 +324,12 @@ struct RockCanvas: View {
     /// Shown while pulling: which revision a release lands on.
     @ViewBuilder
     private var pullHint: some View {
-        if pullArmed, pullOffset != 0, let rock = viewModel.rock {
+        if pullArmed, pullOffset != 0 {
             let older = pullOffset > 0
-            let target = rock.revisionIndex + (older ? -1 : 1)
             let ready = abs(pullOffset) > PageSwipe.pullDistance
-            Label(rock.revisions.indices.contains(target)
-                  ? "\(ready ? "Release for" : "Pull for") revision \(target + 1) of \(rock.revisions.count)"
-                  : (older ? "This is the first version" : "This is the latest version"),
+            let date = viewModel.revisionDate(offset: older ? -1 : 1)
+            Label(date.map { "\(ready ? "Release for" : "Pull for") the \(older ? "earlier" : "newer") version · \(Self.when($0))" }
+                  ?? (older ? "This is the first version" : "This is the latest version"),
                   systemImage: older ? "arrow.down" : "arrow.up")
                 .font(.footnote.weight(.semibold))
                 .padding(.horizontal, 12)

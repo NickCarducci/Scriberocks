@@ -55,6 +55,44 @@ final class RockEditorViewModel: ObservableObject {
         optionIndex = 0
     }
 
+    // MARK: - Revisions by date
+
+    struct RevisionChoice: Identifiable, Equatable {
+        var index: Int
+        var date: Date
+        var isLatest: Bool
+        var isShowing: Bool
+        var id: Int { index }
+    }
+
+    /// Saved versions, newest first.
+    var revisionChoices: [RevisionChoice] {
+        guard let rock else { return [] }
+        let last = rock.revisions.count - 1
+        return rock.revisions.indices.reversed().map {
+            RevisionChoice(index: $0, date: rock.revisions[$0].createdAt, isLatest: $0 == last, isShowing: $0 == rock.revisionIndex)
+        }
+    }
+
+    /// The saved time of the revision `delta` steps from the one showing (for the pull hint).
+    func revisionDate(offset delta: Int) -> Date? {
+        guard let rock, rock.revisions.indices.contains(rock.revisionIndex + delta) else { return nil }
+        return rock.revisions[rock.revisionIndex + delta].createdAt
+    }
+
+    func showRevision(_ index: Int) {
+        guard let rock else { return }
+        step(index - rock.revisionIndex)
+    }
+
+    /// A rock always opens on its newest version.
+    func showLatest() {
+        guard let rock, rock.canGoForward else { return }
+        store.showRevision(rockID, index: rock.revisions.count - 1)
+        text = self.rock?.text ?? text
+        optionIndex = 0
+    }
+
     // MARK: - One row of pages (stories-style)
 
     enum RowMove: Equatable {

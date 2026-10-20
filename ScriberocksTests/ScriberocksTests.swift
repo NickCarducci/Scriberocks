@@ -478,3 +478,40 @@ struct BranchTests {
         #expect(!RockEditorViewModel(rockID: rock.id, store: store).isViewingOlderRevision)
     }
 }
+
+/// Revisions are chosen by when they were saved, newest first, and a rock
+/// always opens on its newest.
+@MainActor
+struct RevisionChoiceTests {
+    private func editor() throws -> (RockEditorViewModel, RockStore, Rock.ID) {
+        let url = FileManager.default.temporaryDirectory.appending(path: "rocks-\(UUID()).json")
+        let store = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: UserDefaults(suiteName: "rc-\(UUID())")!)
+        let rock = try #require(store.add(text: "one"))
+        store.revise(rock.id, to: "two", source: .edited)
+        store.revise(rock.id, to: "three", source: .suggestion)
+        return (RockEditorViewModel(rockID: rock.id, store: store), store, rock.id)
+    }
+
+    @Test func choicesAreNewestFirstWithTheLatestMarked() throws {
+        let (vm, _, _) = try editor()
+        let choices = vm.revisionChoices
+        #expect(choices.map(\.index) == [2, 1, 0])
+        #expect(choices.map(\.isLatest) == [true, false, false])
+        #expect(choices.first?.isShowing == true)
+    }
+
+    @Test func pickingADateShowsThatVersion() throws {
+        let (vm, _, _) = try editor()
+        vm.showRevision(0)
+        #expect(vm.text == "one" && vm.isViewingOlderRevision)
+        #expect(vm.revisionChoices.last?.isShowing == true)
+    }
+
+    @Test func aRockOpensOnItsNewestVersion() throws {
+        let (vm, store, id) = try editor()
+        vm.showRevision(0)
+        let reopened = RockEditorViewModel(rockID: id, store: store)
+        reopened.showLatest()
+        #expect(reopened.text == "three" && !reopened.isViewingOlderRevision)
+    }
+}
