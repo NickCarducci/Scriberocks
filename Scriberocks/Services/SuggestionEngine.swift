@@ -19,7 +19,7 @@ final class SuggestionEngine: ObservableObject {
     private var engine: ScribeEngine?
     private var cache = SuggestionCache<[RockVariant]>(capacity: 64)
     private var prefetching: Task<Void, Never>?
-    static let limit: UInt32 = 40
+    nonisolated static let limit: UInt32 = 40
     /// The loading animation shows at least this long, so it never just flashes.
     static let minimumLoading: Duration = .milliseconds(500)
 
@@ -63,7 +63,7 @@ final class SuggestionEngine: ObservableObject {
         let todo = texts.filter { cache.peek($0) == nil }
         prefetching?.cancel()
         guard !todo.isEmpty else { return }
-        nonisolated(unsafe) let worker = engine
+        let worker = engine
         prefetching = Task { [weak self] in
             for text in todo {
                 if Task.isCancelled { return }
