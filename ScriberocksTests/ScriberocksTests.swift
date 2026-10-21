@@ -429,17 +429,20 @@ struct RowMoveTests {
 /// Vertical pulls move through revision history (Populist's pull rules): only
 /// once the drag latches vertical, only from the scroll edge, past a threshold.
 struct RevisionPullTests {
-    @Test func aPullDownAtTheTopGoesToTheOlderRevision() {
+    /// Same order as the version menu: newest at the top, the first version
+    /// at the bottom. Thumb down (scrolling up) goes newer; thumb up (scrolling
+    /// down) goes older, ending at the first version.
+    @Test func aPullDownAtTheTopGoesToTheNewerRevision() {
         var s = PageSwipe()
         _ = s.update(CGSize(width: 1, height: 12))
         #expect(s.pull(CGSize(width: 2, height: 80)) == 80)
-        #expect(s.pullStep(translation: CGSize(width: 4, height: 130), atTop: true, atBottom: false) == -1)
+        #expect(s.pullStep(translation: CGSize(width: 4, height: 130), atTop: true, atBottom: false) == 1)
     }
 
-    @Test func aPullUpAtTheBottomGoesToTheNewerRevision() {
+    @Test func aPushUpAtTheBottomGoesToTheOlderRevision() {
         var s = PageSwipe()
         _ = s.update(CGSize(width: 0, height: -12))
-        #expect(s.pullStep(translation: CGSize(width: 0, height: -130), atTop: false, atBottom: true) == 1)
+        #expect(s.pullStep(translation: CGSize(width: 0, height: -130), atTop: false, atBottom: true) == -1)
     }
 
     @Test func noPullMidScrollOrShortOrSideways() {

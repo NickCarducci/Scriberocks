@@ -44,13 +44,15 @@ struct PageSwipe {
 
     static let pullDistance: CGFloat = 110
 
-    /// Revision steps for a pull when it ends: -1 (older: pulled down from the
-    /// top of the text), +1 (newer: pulled up from the bottom), or 0. Only
-    /// from the scroll edge, so ordinary scrolling never changes revisions.
+    /// Revision steps for a pull when it ends, in the version menu's order
+    /// (newest at the top, the first version at the bottom): +1 (newer:
+    /// thumb down from the top of the text), -1 (older: thumb up from the
+    /// bottom), or 0. Only from the scroll edge, so ordinary scrolling never
+    /// changes revisions.
     func pullStep(translation: CGSize, atTop: Bool, atBottom: Bool) -> Int {
         guard axis == .vertical, abs(translation.height) > abs(translation.width) * 2 else { return 0 }
-        if atTop && translation.height > Self.pullDistance { return -1 }
-        if atBottom && translation.height < -Self.pullDistance { return 1 }
+        if atTop && translation.height > Self.pullDistance { return 1 }
+        if atBottom && translation.height < -Self.pullDistance { return -1 }
         return 0
     }
 

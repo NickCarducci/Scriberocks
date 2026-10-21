@@ -334,12 +334,13 @@ struct RockCanvas: View {
     @ViewBuilder
     private var pullHint: some View {
         if pullArmed, pullOffset != 0 {
-            let older = pullOffset > 0
+            // Thumb up (pushing from the bottom) = older; thumb down (from the top) = newer.
+            let older = pullOffset < 0
             let ready = abs(pullOffset) > PageSwipe.pullDistance
             let date = viewModel.revisionDate(offset: older ? -1 : 1)
             Label(date.map { "\(ready ? "Release for" : "Pull for") the \(older ? "earlier" : "newer") version · \(Self.when($0))" }
                   ?? (older ? "This is the first version" : "This is the latest version"),
-                  systemImage: older ? "arrow.down" : "arrow.up")
+                  systemImage: older ? "arrow.up" : "arrow.down") // the way the thumb moves
                 .font(.footnote.weight(.semibold))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
