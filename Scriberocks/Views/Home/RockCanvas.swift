@@ -373,21 +373,36 @@ struct RockCanvas: View {
         .background(.background)
     }
 
-    /// ScribeIE (Intent-conditioned Editing) marks on the writer's own text:
-    /// the words its top suggestion would change get a red underline and a
-    /// semi-transparent highlight (`ScribeIEStyle`). Added words aren't shown
-    /// here; swiping to the suggestion shows them as usual.
-    static func scribeIEMarks(on current: String, suggestion: String) -> AttributedString {
+    /// A Generate page: the enhanced proposal against the current text, as
+    /// `inlineDiff`, except that words ScribeIE (Intent-conditioned Editing)
+    /// added beyond ScribeSLM's proposal get ScribeIE's marks — red underline
+    /// over a semi-transparent highlight (`ScribeIEStyle`) — instead of the
+    /// accent color, so writers see which words came from generation.
+    static func generatePage(current: String, proposal: String, enhanced: String) -> AttributedString {
+        var fromProposal: [String: Int] = [:]
+        for w in InlineDiff.parts(from: current, to: proposal).map(\.text) { fromProposal[w.lowercased(), default: 0] += 1 }
         var out = AttributedString()
         var previous: String?
-        for part in InlineDiff.parts(from: current, to: suggestion) where part.kind != .added {
+        for part in InlineDiff.parts(from: current, to: enhanced) {
             if let previous, !InlineDiff.noSpaceBefore.contains(part.text), !InlineDiff.noSpaceAfter.contains(previous) {
                 out += AttributedString(" ")
             }
             var piece = AttributedString(part.text)
-            if part.kind == .removed {
+            let key = part.text.lowercased()
+            let ours = (fromProposal[key] ?? 0) > 0
+            if ours { fromProposal[key]! -= 1 }
+            switch part.kind {
+            case .kept: break
+            case .removed:
+                piece.strikethroughStyle = .single
+                piece.foregroundColor = .secondary
+            case .added where !ours && part.text.contains(where: \.isLetter):
                 piece.underlineStyle = Text.LineStyle(pattern: .solid, color: ScribeIEStyle.underline)
                 piece.backgroundColor = ScribeIEStyle.highlight
+                piece.font = .title3.weight(.semibold)
+            case .added:
+                piece.foregroundColor = .accentColor
+                piece.font = .title3.weight(.semibold)
             }
             out += piece
             previous = part.text

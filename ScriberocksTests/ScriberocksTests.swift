@@ -544,31 +544,31 @@ struct SuggestionCacheTests {
 }
 
 struct ScribeIEMarksTests {
-    /// ScribeIE (Intent-conditioned Editing) marks the writer's own words that
-    /// its top suggestion would change: red underline + adaptive highlight;
-    /// kept words stay plain.
-    @Test func marksOnlyTheWordsTheSuggestionChanges() {
-        let marked = RockCanvas.scribeIEMarks(on: "The meeting was really long", suggestion: "The meeting was long")
-        var flagged: [String] = []
-        var plain: [String] = []
-        for run in marked.runs {
-            let text = String(marked[run.range].characters).trimmingCharacters(in: .whitespaces)
+    /// Generate pages: ScribeSLM's added words keep the accent; words ScribeIE
+    /// (Intent-conditioned Editing) added get its marks.
+    @Test func marksOnlyWhatScribeIEAdded() {
+        let page = RockCanvas.generatePage(
+            current: "I want to come to the party but I have to work late",
+            proposal: "I can't come to the party because I have to work late",
+            enhanced: "I can't come to the celebration because I have to work late")
+        var scribeIE: [String] = []
+        var scribeSLM: [String] = []
+        for run in page.runs {
+            let text = String(page[run.range].characters).trimmingCharacters(in: .whitespaces)
             if text.isEmpty { continue }
             if run.underlineStyle != nil {
                 #expect(run.backgroundColor == ScribeIEStyle.highlight)
-                flagged.append(text)
-            } else {
-                #expect(run.backgroundColor == nil)
-                plain.append(text)
+                scribeIE.append(text)
+            } else if run.foregroundColor == .accentColor {
+                scribeSLM.append(text)
             }
         }
-        #expect(flagged == ["really"])
-        #expect(plain.joined(separator: " ") == "The meeting was long")
-        #expect(String(marked.characters) == "The meeting was really long", "the writer's text, unchanged")
+        #expect(scribeIE == ["celebration"])
+        #expect(scribeSLM.contains("because") && scribeSLM.contains("can't"))
     }
 
-    @Test func nothingToMarkWhenTheSuggestionOnlyAdds() {
-        let marked = RockCanvas.scribeIEMarks(on: "I stayed home", suggestion: "I stayed home.")
-        #expect(marked.runs.allSatisfy { $0.underlineStyle == nil })
+    @Test func noMarksWhenScribeIEAddsNothing() {
+        let page = RockCanvas.generatePage(current: "I stayed home", proposal: "I stayed home.", enhanced: "I stayed home.")
+        #expect(page.runs.allSatisfy { $0.underlineStyle == nil })
     }
 }
