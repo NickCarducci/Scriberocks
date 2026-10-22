@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import SwiftUI
 import DeclaredAgeRange
 @testable import Scriberocks
 
@@ -539,5 +540,35 @@ struct SuggestionCacheTests {
         cache["a"] = 2
         cache["b"] = 3
         #expect(cache["a"] == 2 && cache.count == 2)
+    }
+}
+
+struct ScribeIEMarksTests {
+    /// ScribeIE (Intent-conditioned Editing) marks the writer's own words that
+    /// its top suggestion would change: red underline + adaptive highlight;
+    /// kept words stay plain.
+    @Test func marksOnlyTheWordsTheSuggestionChanges() {
+        let marked = RockCanvas.scribeIEMarks(on: "The meeting was really long", suggestion: "The meeting was long")
+        var flagged: [String] = []
+        var plain: [String] = []
+        for run in marked.runs {
+            let text = String(marked[run.range].characters).trimmingCharacters(in: .whitespaces)
+            if text.isEmpty { continue }
+            if run.underlineStyle != nil {
+                #expect(run.backgroundColor == ScribeIEStyle.highlight)
+                flagged.append(text)
+            } else {
+                #expect(run.backgroundColor == nil)
+                plain.append(text)
+            }
+        }
+        #expect(flagged == ["really"])
+        #expect(plain.joined(separator: " ") == "The meeting was long")
+        #expect(String(marked.characters) == "The meeting was really long", "the writer's text, unchanged")
+    }
+
+    @Test func nothingToMarkWhenTheSuggestionOnlyAdds() {
+        let marked = RockCanvas.scribeIEMarks(on: "I stayed home", suggestion: "I stayed home.")
+        #expect(marked.runs.allSatisfy { $0.underlineStyle == nil })
     }
 }

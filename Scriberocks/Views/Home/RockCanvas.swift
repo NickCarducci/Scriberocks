@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import ScribeCore
 
 /// One rock, full screen: tap to type; swipe through its suggestions page by
@@ -372,6 +373,28 @@ struct RockCanvas: View {
         .background(.background)
     }
 
+    /// ScribeIE (Intent-conditioned Editing) marks on the writer's own text:
+    /// the words its top suggestion would change get a red underline and a
+    /// semi-transparent highlight (`ScribeIEStyle`). Added words aren't shown
+    /// here; swiping to the suggestion shows them as usual.
+    static func scribeIEMarks(on current: String, suggestion: String) -> AttributedString {
+        var out = AttributedString()
+        var previous: String?
+        for part in InlineDiff.parts(from: current, to: suggestion) where part.kind != .added {
+            if let previous, !InlineDiff.noSpaceBefore.contains(part.text), !InlineDiff.noSpaceAfter.contains(previous) {
+                out += AttributedString(" ")
+            }
+            var piece = AttributedString(part.text)
+            if part.kind == .removed {
+                piece.underlineStyle = Text.LineStyle(pattern: .solid, color: ScribeIEStyle.underline)
+                piece.backgroundColor = ScribeIEStyle.highlight
+            }
+            out += piece
+            previous = part.text
+        }
+        return out
+    }
+
     /// The option against the current text: removed words struck through and
     /// dimmed, added words in the accent color.
     static func inlineDiff(from current: String, to option: String) -> AttributedString {
@@ -422,4 +445,13 @@ struct CrabLoader: View {
 
 extension SuggestionEngine.State {
     var isReady: Bool { if case .ready = self { return true } else { return false } }
+}
+
+/// ScribeIE's marks: a red underline over a semi-transparent highlight —
+/// white in light mode, dark in dark mode. One place to retune.
+enum ScribeIEStyle {
+    static let underline = Color.red
+    static let highlight = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark ? UIColor.black.withAlphaComponent(0.45) : UIColor.white.withAlphaComponent(0.45)
+    })
 }
