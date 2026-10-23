@@ -11,6 +11,8 @@ struct RockCanvas: View {
     @EnvironmentObject private var suggestions: SuggestionEngine
     @FocusState private var isEditing: Bool
     @State private var confirmDelete = false
+    @State private var showActions = false
+    @State private var showScriberocks = false
     /// Typing in the editor (tap the current text); otherwise the options pager.
     @State private var isTyping = false
     @State private var swipe = PageSwipe()
@@ -78,6 +80,9 @@ struct RockCanvas: View {
         } message: {
             Text("This is an older version. Branching starts a new rock from it and leaves this rock as it is.")
         }
+        .sheet(isPresented: $showScriberocks) {
+            ScriberocksPage().presentationDragIndicator(.visible)
+        }
         .confirmationDialog("Delete this rock?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 viewModel.delete()
@@ -88,6 +93,8 @@ struct RockCanvas: View {
         .task(id: variants.count) {
             // Screenshot/QA hook: `-previewOption N` previews option N inline.
             let args = ProcessInfo.processInfo.arguments
+            if args.contains("-openScriberocks") { showScriberocks = true }
+            if args.contains("-openActions") { showActions = true }
             if let i = args.firstIndex(of: "-previewOption"), i + 1 < args.count, let n = Int(args[i + 1]), !variants.isEmpty {
                 viewModel.selectOption(n, count: variants.count)
             }
@@ -227,10 +234,27 @@ struct RockCanvas: View {
             : date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
     }
 
+    /// What's showing: the text, or the option being previewed (ScribeIE's
+    /// version when Generate made one).
+    private func onScreenText(_ variants: [RockVariant]) -> String {
+        let i = viewModel.optionIndex
+        if isTyping || i == 0 || !variants.indices.contains(i - 1) { return viewModel.rock?.text ?? viewModel.text }
+        return variants[i - 1].enhanced ?? variants[i - 1].text
+    }
+
     private func bottomBar(_ variants: [RockVariant]) -> some View {
         let action = viewModel.primaryAction(isTyping: isTyping)
         return HStack {
-            Color.clear.frame(width: 44, height: 44)
+            Button { showScriberocks = true } label: {
+                Image("rock")
+                    .font(.system(size: 18, weight: .semibold))
+                    .frame(width: 44, height: 44)
+                    .background(.thinMaterial, in: .circle)
+                    .contentShape(.circle)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Scriberocks")
+            .accessibilityHint("What Scriberocks does, what's new, and sharing it")
             Spacer()
             switch action {
             case .newRock:
@@ -249,17 +273,26 @@ struct RockCanvas: View {
                 PrimaryButton(systemImage: "checkmark", label: "Done") { isEditing = false }
             }
             Spacer()
-            Menu {
-                Button("Edit text", systemImage: "pencil") { isTyping = true }
-                Button("Delete rock", systemImage: "trash", role: .destructive) { confirmDelete = true }
-            } label: {
+            // A button and an action sheet rather than a Menu: the sheet is
+            // state-driven, so suggestions refreshing the view can't dismiss it.
+            Button { showActions = true } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 18, weight: .semibold))
                     .frame(width: 44, height: 44)
                     .background(.thinMaterial, in: .circle)
+                    .contentShape(.circle)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("More")
+            .accessibilityHint("Copy, share, edit or delete this rock")
+            .confirmationDialog("This rock", isPresented: $showActions) {
+                let text = onScreenText(variants)
+                Button("Copy text") { UIPasteboard.general.string = text }
+                Button("Share text") { ShareSheet.present([text]) }
+                Button("Share text with a link") { ShareSheet.present([text, ScriberocksPage.appLink]) }
+                Button("Edit text") { isTyping = true }
+                Button("Delete rock", role: .destructive) { confirmDelete = true }
+            }
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 12)
