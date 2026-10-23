@@ -93,6 +93,14 @@ final class SuggestionEngine: ObservableObject {
         return result
     }
 
+    /// Suggestions for the struck sentences of a long rock (`StrikeBox`):
+    /// only `text[struck]` is scored, and each suggestion is spliced back into
+    /// the whole rock, which otherwise stays exactly as written. nil = all of it.
+    func variants(for text: String, struck: Range<String.Index>?) -> [RockVariant] {
+        guard let struck else { return variants(for: text) }
+        return variants(for: String(text[struck])).map { StrikeBox.splice($0, into: text, at: struck) }
+    }
+
     /// Prepares suggestions for `texts` in the background, one at a time,
     /// skipping any already cached. A new call replaces the previous queue.
     func prefetch(_ texts: [String]) {

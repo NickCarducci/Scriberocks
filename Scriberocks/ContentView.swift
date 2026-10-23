@@ -64,7 +64,7 @@ extension RockStore {
     static func demo() -> RockStore {
         let url = FileManager.default.temporaryDirectory.appending(path: "demo-rocks-\(UUID()).json")
         let store = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: UserDefaults(suiteName: "demo-rocks")!)
-        // `-demoLatest N` makes sample rock N (0-3, as below) the latest, so it opens first.
+        // `-demoLatest N` makes sample rock N (0-4, as below) the latest, so it opens first.
         let args = ProcessInfo.processInfo.arguments
         let latest = args.firstIndex(of: "-demoLatest").flatMap { i in i + 1 < args.count ? Int(args[i + 1]) : nil } ?? 3
         let samples: [() -> Void] = [
@@ -77,6 +77,16 @@ extension RockStore {
             { _ = store.add(text: "I want to finish the book but I keep getting distracted") },
             { _ = store.add(text: "She gave a brilliant speech about the future of small towns") },
             { _ = store.add(text: "i think the meeting was really kind of long and we didnt decide anything") },
+            // A long rock (scrolls; only the strike box is scored).
+            { _ = store.add(text: """
+                We left before sunrise. The road was empty and the fields were grey. My brother wanted to stop for coffee but we kept going.
+
+                By noon the hills had turned green. We ate lunch by a small lake. The water was very cold and nobody swam.
+
+                In the afternoon it started to rain. We found a cheap motel near the highway. The room smelled of old carpet but the beds were soft.
+
+                That night we talked about our father. He used to drive this same road every summer. I think he would have liked the trip.
+                """) },
         ]
         for (i, add) in samples.enumerated() where i != latest { add() }
         if samples.indices.contains(latest) { samples[latest]() }

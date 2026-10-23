@@ -18,6 +18,17 @@ struct RockCanvas: View {
     @State private var pullOffset: CGFloat = 0
     @State private var pullArmed = false
     @State private var edges = Edges()
+    /// Edges where the finger was last lifted (Populist's pull locking).
+    @State private var lock = PullLock()
+    /// The edges when the current vertical drag latched.
+    @State private var pullStart: Edges?
+    /// Long rocks: the strike box's top, in points down the text (set when
+    /// scrolling the current text settles); its width; its height.
+    @State private var strikeTop: CGFloat = 0
+    @State private var textWidth: CGFloat = 0
+    @State private var textHeight: CGFloat = 0
+    /// The current page's scroll position; neighbors show the strike box's place.
+    @State private var pagePosition = ScrollPosition(y: 0)
     /// Text that would branch into a new rock, awaiting confirmation.
     @State private var pendingBranch: String?
     let previousRockText: String?
@@ -96,9 +107,21 @@ struct RockCanvas: View {
             // Prepare what's likely next: this rock's other versions, the neighboring rocks.
             guard case .ready = suggestions.state, let rock = viewModel.rock else { return }
             let versions = rock.revisions.map(\.text).filter { $0 != rock.text }
-            suggestions.prefetch([previousRockText, nextRockText].compactMap { $0 } + versions.reversed())
+            // What each would strike when it opens (scrolled to the top).
+            suggestions.prefetch(([previousRockText, nextRockText].compactMap { $0 } + versions.reversed()).map { text in
+                strikeRange(text, top: 0).map { String(text[$0]) } ?? text
+            })
         }
         .onDisappear(perform: viewModel.commit)
+        .onChange(of: edges) { _, new in lock.moved(atTop: new.top, atBottom: new.bottom) }
+        .onChange(of: viewModel.optionIndex) {
+            // The page turned to keeps the strike box's place in view.
+            pagePosition = ScrollPosition(y: strikeTop)
+        }
+        .onChange(of: viewModel.rock?.revisionIndex) {
+            strikeTop = 0
+            pagePosition = ScrollPosition(y: 0)
+        }
         .onChange(of: isEditing) { _, editing in
             if !editing {
                 if viewModel.isViewingOlderRevision, let rock = viewModel.rock, viewModel.text != rock.text {
@@ -119,8 +142,19 @@ struct RockCanvas: View {
 
     private var variants: [RockVariant] {
         guard case .ready = suggestions.state else { return [] }
-        return suggestions.variants(for: viewModel.rock?.text ?? viewModel.text)
+        let text = viewModel.rock?.text ?? viewModel.text
+        return suggestions.variants(for: text, struck: strikeRange(text, top: strikeTop))
     }
+
+    static let pageFont = UIFont.preferredFont(forTextStyle: .title3)
+
+    /// The struck sentences of `text` with the strike box at `top`; nil = all.
+    private func strikeRange(_ text: String, top: CGFloat) -> Range<String.Index>? {
+        StrikeBox.range(in: text, top: top, width: textWidth, font: Self.pageFont)
+    }
+
+    /// Taller than the strike box: the box shows and only what it strikes is scored.
+    private var isLong: Bool { textHeight > StrikeBox.height + 1 }
 
     /// "Current" or "Option 2 of 14 · cut", or the engine's state.
     @ViewBuilder
@@ -246,7 +280,8 @@ struct RockCanvas: View {
             let width = geo.size.width
             ZStack(alignment: .topLeading) {
                 ForEach(max(first, index - 1)...min(last, index + 1), id: \.self) { k in
-                    page(pageText(k, current: current, variants: variants), isCurrent: k == index, dimmed: k < 0 || k > count)
+                    page(pageText(k, current: current, variants: variants), isCurrent: k == index, dimmed: k < 0 || k > count,
+                         isText: k == 0, viewport: geo.size.height)
                         .frame(width: width, height: geo.size.height)
                         .offset(x: CGFloat(k - index) * width
                                 + PageSwipe.offset(drag: dragOffset, atStart: index == 0 && previousRockText == nil,
@@ -268,14 +303,19 @@ struct RockCanvas: View {
                         if let x = swipe.update(drag.translation) {
                             withTransaction(t) { dragOffset = x }
                         } else if let y = swipe.pull(drag.translation) {
-                            // A pull only from the scroll edge (down at the top, up at the bottom).
-                            pullArmed = (y > 0 && edges.top) || (y < 0 && edges.bottom)
+                            // A pull only from the scroll edge it started at (down at the top,
+                            // up at the bottom), and only once a finger was lifted there.
+                            if pullStart == nil { pullStart = edges }
+                            let from = lock.edges(startedAtTop: pullStart!.top, startedAtBottom: pullStart!.bottom)
+                            pullArmed = (y > 0 && from.top) || (y < 0 && from.bottom)
                             withTransaction(t) { pullOffset = pullArmed ? y : 0 }
                         }
                     }
                     .onEnded { drag in
                         if swipe.axis == .vertical {
-                            let step = swipe.pullStep(translation: drag.translation, atTop: edges.top, atBottom: edges.bottom)
+                            let start = pullStart ?? edges
+                            let from = lock.edges(startedAtTop: start.top, startedAtBottom: start.bottom)
+                            let step = swipe.pullStep(translation: drag.translation, atTop: from.top, atBottom: from.bottom)
                             withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
                                 if step < 0, viewModel.canGoBack { viewModel.goBack() }
                                 if step > 0, viewModel.canGoForward { viewModel.goForward() }
@@ -298,6 +338,8 @@ struct RockCanvas: View {
                             }
                         }
                         pullArmed = false
+                        pullStart = nil
+                        lock.released(atTop: edges.top, atBottom: edges.bottom)
                         swipe.reset()
                     }
             )
@@ -356,14 +398,37 @@ struct RockCanvas: View {
 
     private struct Edges: Equatable { var top = true; var bottom = true }
 
-    private func page(_ text: AttributedString, isCurrent: Bool, dimmed: Bool) -> some View {
+    /// `isText`: this rock's own text, whose scrolling moves the strike box.
+    private func page(_ text: AttributedString, isCurrent: Bool, dimmed: Bool, isText: Bool, viewport: CGFloat) -> some View {
         ScrollView {
             Text(text)
                 .font(.title3)
                 .foregroundStyle(dimmed ? .secondary : .primary)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
+                .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
+                    if isText { textWidth = size.width; textHeight = size.height }
+                }
                 .padding(.horizontal, 5)
                 .padding(.vertical, 8)
+        }
+        // Long rocks scroll far enough for the last sentence to reach the box.
+        .contentMargins(.bottom, isLong ? max(0, viewport - StrikeBox.height - 16) : 0, for: .scrollContent)
+        .scrollPosition(isCurrent ? $pagePosition : .constant(ScrollPosition(y: strikeTop)))
+        .onScrollPhaseChange { _, phase, context in
+            if isText, isCurrent, phase == .idle {
+                strikeTop = max(0, context.geometry.contentOffset.y + context.geometry.contentInsets.top)
+            }
+        }
+        .overlay(alignment: .top) {
+            if isText, isLong {
+                // The strike box: the sentences it touches are the ones scored.
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.accentColor.opacity(0.08))
+                    .frame(height: StrikeBox.height)
+                    .padding(.top, 8)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
         }
         .onScrollGeometryChange(for: Edges.self) { geo in
             Edges(top: geo.contentOffset.y <= -geo.contentInsets.top + 1,
@@ -387,7 +452,7 @@ struct RockCanvas: View {
         var out = AttributedString()
         var previous: String?
         for part in InlineDiff.parts(from: current, to: enhanced) {
-            if let previous, !InlineDiff.noSpaceBefore.contains(part.text), !InlineDiff.noSpaceAfter.contains(previous) {
+            if let previous, InlineDiff.spaced(previous, part.text) {
                 out += AttributedString(" ")
             }
             var piece = AttributedString(part.text)
@@ -419,7 +484,7 @@ struct RockCanvas: View {
         var out = AttributedString()
         var previous: String?
         for part in InlineDiff.parts(from: current, to: option) {
-            if let previous, !InlineDiff.noSpaceBefore.contains(part.text), !InlineDiff.noSpaceAfter.contains(previous) {
+            if let previous, InlineDiff.spaced(previous, part.text) {
                 out += AttributedString(" ")
             }
             var piece = AttributedString(part.text)

@@ -3,7 +3,8 @@ import Foundation
 /// Word-level comparison of the current text with an option, for the inline
 /// preview: kept words plain, removed words struck through, added words
 /// highlighted. Words and punctuation are separate tokens, so "loud." against
-/// "loud and ... warm." keeps "loud" and the period.
+/// "loud and ... warm." keeps "loud" and the period. Line breaks are tokens
+/// too, so paragraphs survive the preview.
 enum InlineDiff {
     struct Part: Equatable {
         enum Kind: Equatable { case kept, removed, added }
@@ -12,7 +13,7 @@ enum InlineDiff {
     }
 
     static func tokens(_ text: String) -> [String] {
-        let pattern = #"[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*|[^\s\p{L}\p{N}]"#
+        let pattern = #"\n[\s]*\n|\n|[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*|[^\s\p{L}\p{N}]"#
         let regex = try! NSRegularExpression(pattern: pattern)
         let ns = text as NSString
         return regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).map { ns.substring(with: $0.range) }
@@ -47,10 +48,15 @@ enum InlineDiff {
     static func joined(_ tokens: [String]) -> String {
         var out = ""
         for (k, t) in tokens.enumerated() {
-            if k > 0, !noSpaceBefore.contains(t), !noSpaceAfter.contains(tokens[k - 1]) { out += " " }
+            if k > 0, spaced(tokens[k - 1], t) { out += " " }
             out += t
         }
         return out
+    }
+
+    /// Whether a space goes between two tokens when they're shown together.
+    static func spaced(_ previous: String, _ next: String) -> Bool {
+        !noSpaceBefore.contains(next) && !noSpaceAfter.contains(previous) && !previous.contains("\n") && !next.contains("\n")
     }
 
     static let noSpaceBefore: Set<String> = [".", ",", ";", ":", "!", "?", ")", "]", "}", "'", "’", "”", "%"]

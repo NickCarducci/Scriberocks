@@ -68,3 +68,30 @@ struct PageSwipe {
         return pastEnd ? drag * resistance : drag
     }
 }
+
+/// Populist's pull locking (UnifiedScrollGestureManager): a pull from an edge
+/// counts only when the drag starts at that edge and the finger was last
+/// lifted there, so a scroll that runs into either end of a long rock never
+/// turns into a revision change. Text that doesn't scroll is always at both
+/// edges, so short rocks pull as before.
+struct PullLock {
+    private(set) var top = true
+    private(set) var bottom = true
+
+    /// The text scrolled; leaving an edge locks it again.
+    mutating func moved(atTop: Bool, atBottom: Bool) {
+        if !atTop { top = false }
+        if !atBottom { bottom = false }
+    }
+
+    /// A finger lifted: the edges it was lifted at unlock.
+    mutating func released(atTop: Bool, atBottom: Bool) {
+        top = atTop
+        bottom = atBottom
+    }
+
+    /// The edges a drag that started at these edges may pull from.
+    func edges(startedAtTop: Bool, startedAtBottom: Bool) -> (top: Bool, bottom: Bool) {
+        (top && startedAtTop, bottom && startedAtBottom)
+    }
+}

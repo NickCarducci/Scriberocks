@@ -2,6 +2,7 @@ import Foundation
 import Testing
 import SwiftUI
 import DeclaredAgeRange
+import ScribeCore
 @testable import Scriberocks
 
 @MainActor
@@ -617,5 +618,87 @@ struct SuggestionOptionsTests {
         #expect(Set(engine.availableStyles) == ["casual", "publishable"])
         engine.options.style = "casual"
         #expect(!engine.variants(for: "I want to come to the party but I have to work late").isEmpty)
+    }
+}
+
+struct StrikeBoxTests {
+    private func strings(_ text: String) -> [String] { StrikeBox.sentences(in: text).map { String(text[$0]) } }
+
+    /// Same splits as the engine (core text::sentences): line breaks, and . ! ? before a space or the end.
+    @Test func splitsLikeTheEngine() {
+        #expect(strings("One here. Two? Three!\n\nFour 3.5 stays one") == ["One here.", "Two?", "Three!", "Four 3.5 stays one"])
+        #expect(strings("  ") == [])
+    }
+
+    @Test func anySentenceTouchingTheBoxIsStruck() {
+        let extents: [ClosedRange<CGFloat>] = [0...20, 20...60, 60...140, 140...160]
+        #expect(StrikeBox.struck(extents, box: 30...106) == 1...2, "partly inside counts")
+        #expect(StrikeBox.struck(extents, box: 200...276) == nil)
+    }
+
+    @Test @MainActor func shortRocksAreScoredWhole() {
+        let font = UIFont.systemFont(ofSize: 20)
+        #expect(StrikeBox.range(in: "Just one sentence here.", top: 0, width: 300, font: font) == nil)
+        #expect(StrikeBox.range(in: "Two short. Sentences.", top: 0, width: 300, font: font) == nil)
+    }
+
+    @Test @MainActor func longRocksStrikeOnlyWhatIsInTheBox() throws {
+        let text = (1...30).map { "Sentence number \($0) runs on for a little while." }.joined(separator: " ")
+        let font = UIFont.systemFont(ofSize: 20)
+        let top = try #require(StrikeBox.range(in: text, top: 0, width: 300, font: font))
+        #expect(text[top].hasPrefix("Sentence number 1 "))
+        #expect(!text[top].contains("number 30 "))
+        let lower = try #require(StrikeBox.range(in: text, top: 400, width: 300, font: font))
+        #expect(!text[lower].hasPrefix("Sentence number 1 "))
+        #expect(text[lower].hasSuffix("."))
+    }
+
+    @Test func splicingKeepsTheRestExactly() {
+        let text = "Keep this.\n\nChange this one. Keep  that."
+        let start = text.range(of: "Change this one.")!
+        let v = RockVariant(text: "Swap this one.", ops: ["swap"], fluencyDelta: 0, changed: [ByteRange(start: 0, end: 4)],
+                            enhanced: nil, enhancedChanged: [])
+        let spliced = StrikeBox.splice(v, into: text, at: start)
+        #expect(spliced.text == "Keep this.\n\nSwap this one. Keep  that.")
+        #expect(spliced.changedRanges.map { String(spliced.text[$0]) } == ["Swap"])
+    }
+}
+
+struct PullLockTests {
+    @Test func shortTextPullsRightAway() {
+        let lock = PullLock()
+        #expect(lock.edges(startedAtTop: true, startedAtBottom: true) == (true, true))
+    }
+
+    @Test func scrollingIntoTheBottomDoesNotPull() {
+        var lock = PullLock()
+        lock.moved(atTop: true, atBottom: false)  // long text, opened at the top
+        lock.moved(atTop: false, atBottom: false) // scrolling down…
+        lock.moved(atTop: false, atBottom: true)  // …into the end, finger still down
+        #expect(lock.edges(startedAtTop: false, startedAtBottom: true).bottom == false)
+        lock.released(atTop: false, atBottom: true) // lifted at the bottom
+        #expect(lock.edges(startedAtTop: false, startedAtBottom: true).bottom == true)
+    }
+
+    @Test func leavingAnEdgeLocksItAgain() {
+        var lock = PullLock()
+        lock.released(atTop: false, atBottom: true)
+        lock.moved(atTop: false, atBottom: false)
+        lock.moved(atTop: false, atBottom: true)
+        #expect(lock.edges(startedAtTop: false, startedAtBottom: true).bottom == false)
+    }
+
+    @Test func aDragMustStartAtTheEdge() {
+        let lock = PullLock()
+        #expect(lock.edges(startedAtTop: false, startedAtBottom: false) == (false, false))
+    }
+}
+
+struct InlineDiffParagraphTests {
+    @Test func paragraphBreaksSurviveThePreview() {
+        let old = "One two.\n\nThree four."
+        let page = RockCanvas.inlineDiff(from: old, to: "One.\n\nThree four.")
+        #expect(String(page.characters) == "One two.\n\nThree four.", "removed word struck, break kept")
+        #expect(InlineDiff.joined(InlineDiff.tokens(old)) == old)
     }
 }
