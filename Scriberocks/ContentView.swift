@@ -58,6 +58,32 @@ struct ContentView: View {
 }
 
 extension RockStore {
+    #if DEBUG
+    /// Sample rocks for screenshots/QA (`-demoRocks`): a throwaway local store,
+    /// oldest first, one with a revision history. Never touches real rocks.
+    static func demo() -> RockStore {
+        let url = FileManager.default.temporaryDirectory.appending(path: "demo-rocks-\(UUID()).json")
+        let store = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: UserDefaults(suiteName: "demo-rocks")!)
+        // `-demoLatest N` makes sample rock N (0-3, as below) the latest, so it opens first.
+        let args = ProcessInfo.processInfo.arguments
+        let latest = args.firstIndex(of: "-demoLatest").flatMap { i in i + 1 < args.count ? Int(args[i + 1]) : nil } ?? 3
+        let samples: [() -> Void] = [
+            {
+                if let river = store.add(text: "the river bank was quiet this morning and the water looked cold") {
+                    store.revise(river.id, to: "The river bank was quiet this morning. The water looked cold.", source: .suggestion)
+                    store.revise(river.id, to: "The river bank was still this morning. The water looked cold.", source: .suggestion)
+                }
+            },
+            { _ = store.add(text: "I want to finish the book but I keep getting distracted") },
+            { _ = store.add(text: "She gave a brilliant speech about the future of small towns") },
+            { _ = store.add(text: "i think the meeting was really kind of long and we didnt decide anything") },
+        ]
+        for (i, add) in samples.enumerated() where i != latest { add() }
+        if samples.indices.contains(latest) { samples[latest]() }
+        return store
+    }
+    #endif
+
     static func preview() -> RockStore {
         let url = FileManager.default.temporaryDirectory.appending(path: "preview-rocks-\(UUID()).json")
         let store = RockStore(sync: LocalOnlyRockSyncService(), fileURL: url, defaults: UserDefaults(suiteName: "preview")!)

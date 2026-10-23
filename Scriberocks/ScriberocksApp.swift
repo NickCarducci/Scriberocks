@@ -29,6 +29,13 @@ struct ScriberocksApp: App {
         let container = AppContainer()
         _container = StateObject(wrappedValue: container)
         _authState = StateObject(wrappedValue: UserAuthState())
+        #if DEBUG
+        // Screenshot/QA hook: `-demoRocks` uses sample rocks in a throwaway store.
+        if ProcessInfo.processInfo.arguments.contains("-demoRocks") {
+            _rockStore = StateObject(wrappedValue: RockStore.demo())
+            return
+        }
+        #endif
         _rockStore = StateObject(wrappedValue: RockStore(sync: container.rockSyncService))
     }
 
