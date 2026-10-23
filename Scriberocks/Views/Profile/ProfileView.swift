@@ -6,7 +6,10 @@ struct ProfileView: View {
     @StateObject private var viewModel: ProfileViewModel
     @Environment(\.requestAgeRange) private var requestAgeRange
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var suggestions: SuggestionEngine
     @State private var confirmDelete = false
+    /// The variety slider while dragging; saved (re-running suggestions) on release.
+    @State private var variety: Double?
 
     init(container: AppContainer, authState: UserAuthState, store: RockStore, childSafety: ChildSafetyManager) {
         _viewModel = StateObject(wrappedValue: ProfileViewModel(
@@ -24,6 +27,7 @@ struct ProfileView: View {
                 if viewModel.isSignedIn {
                     ageSection
                 }
+                writingSection
                 journalSection
                 aboutSection
             }
@@ -118,6 +122,42 @@ struct ProfileView: View {
         }
     }
 
+    /// Suggestion options; each control shows only when its model is bundled.
+    private var writingSection: some View {
+        Section {
+            if !suggestions.availableStyles.isEmpty {
+                Picker("Prose style", selection: $suggestions.options.style) {
+                    Text("Default").tag("")
+                    ForEach(suggestions.availableStyles, id: \.self) { Text($0.capitalized).tag($0) }
+                }
+            }
+            VStack(alignment: .leading) {
+                Text("Variety")
+                Slider(value: Binding(get: { variety ?? suggestions.options.variety }, set: { variety = $0 }), in: 0...1) {
+                    Text("Variety")
+                } minimumValueLabel: {
+                    Text("Safer").font(.caption)
+                } maximumValueLabel: {
+                    Text("Bolder").font(.caption)
+                } onEditingChanged: { editing in
+                    if !editing, let variety {
+                        suggestions.options.variety = variety
+                        self.variety = nil
+                    }
+                }
+            }
+            if suggestions.generateAvailable {
+                Toggle("Generate", isOn: $suggestions.options.generate)
+            }
+        } header: {
+            Text("Writing")
+        } footer: {
+            Text(suggestions.availableStyles.isEmpty
+                 ? "Variety trades safer word swaps for more of them."
+                 : "Casual knows everyday writing; publishable knows published prose. Variety trades safer word swaps for more of them.")
+        }
+    }
+
     private var journalSection: some View {
         Section("Journal") {
             LabeledContent("Rocks", value: viewModel.rockCount, format: .number)
@@ -145,4 +185,5 @@ struct ProfileView: View {
         store: .preview(),
         childSafety: ChildSafetyManager()
     )
+    .environmentObject(SuggestionEngine(modelsURL: nil))
 }

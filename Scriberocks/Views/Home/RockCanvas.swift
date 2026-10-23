@@ -318,7 +318,10 @@ struct RockCanvas: View {
     private func pageText(_ k: Int, current: String, variants: [RockVariant]) -> AttributedString {
         if k < 0 { return AttributedString(previousRockText ?? "") }
         if k > variants.count { return AttributedString(nextRockText ?? "") }
-        return k == 0 ? AttributedString(current) : Self.inlineDiff(from: current, to: variants[k - 1].text)
+        if k == 0 { return AttributedString(current) }
+        let v = variants[k - 1]
+        if let enhanced = v.enhanced { return Self.generatePage(current: current, proposal: v.text, enhanced: enhanced) }
+        return Self.inlineDiff(from: current, to: v.text)
     }
 
     /// Finishes a swipe past this rock's row by sliding the neighbor fully in,

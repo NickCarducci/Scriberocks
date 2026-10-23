@@ -572,3 +572,50 @@ struct ScribeIEMarksTests {
         #expect(page.runs.allSatisfy { $0.underlineStyle == nil })
     }
 }
+
+struct SuggestionOptionsTests {
+    private func defaults() -> UserDefaults {
+        let name = "SuggestionOptionsTests.\(UUID())"
+        let d = UserDefaults(suiteName: name)!
+        d.removePersistentDomain(forName: name)
+        return d
+    }
+
+    @Test func defaultsMatchTheEngine() {
+        let o = SuggestionOptions(from: defaults())
+        #expect(o == SuggestionOptions(style: "", variety: 0.5, generate: false))
+    }
+
+    @Test func savedOptionsSurviveRelaunch() {
+        let d = defaults()
+        SuggestionOptions(style: "casual", variety: 0.8, generate: true).save(to: d)
+        #expect(SuggestionOptions(from: d) == SuggestionOptions(style: "casual", variety: 0.8, generate: true))
+    }
+
+    @Test func onlyWhatTheEngineCanServe() {
+        let o = SuggestionOptions(style: "publishable", variety: 1.4, generate: true)
+        #expect(o.effective(availableStyles: ["casual"], generateAvailable: false) == SuggestionOptions(style: "", variety: 1, generate: false))
+        #expect(o.effective(availableStyles: ["casual", "publishable"], generateAvailable: true) == SuggestionOptions(style: "publishable", variety: 1, generate: true))
+    }
+
+    @Test func cacheSeparatesOptions() {
+        let text = "I want to go but it rains"
+        #expect(SuggestionOptions(style: "casual").cacheKey(text) != SuggestionOptions(style: "publishable").cacheKey(text))
+        #expect(SuggestionOptions(variety: 0.2).cacheKey(text) != SuggestionOptions(variety: 0.8).cacheKey(text))
+        #expect(SuggestionOptions().cacheKey(text) == SuggestionOptions().cacheKey(text))
+    }
+
+    /// The app bundles both judges, they load, and the engine offers their styles.
+    @Test @MainActor func bundledJudgesOfferBothStyles() async throws {
+        let models = try #require(Bundle.main.url(forResource: "Models", withExtension: nil))
+        for style in ["casual", "publishable"] {
+            #expect(FileManager.default.fileExists(atPath: models.appending(path: "judges/\(style)/model.q8.safetensors").path()))
+        }
+        let engine = SuggestionEngine(modelsURL: models, defaults: defaults())
+        for _ in 0..<600 where !engine.state.isReady { try await Task.sleep(for: .milliseconds(100)) }
+        #expect(engine.state.isReady)
+        #expect(Set(engine.availableStyles) == ["casual", "publishable"])
+        engine.options.style = "casual"
+        #expect(!engine.variants(for: "I want to come to the party but I have to work late").isEmpty)
+    }
+}

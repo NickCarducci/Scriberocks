@@ -5,11 +5,11 @@
 set -eu
 cd "$(dirname "$0")/.."
 DEST=Models
-FILES="lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json"
+FILES="lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json judges/casual/config.json judges/casual/vocab.txt judges/casual/model.q8.safetensors judges/publishable/config.json judges/publishable/vocab.txt judges/publishable/model.q8.safetensors"
 
 if [ "${1:-}" = "--from" ]; then
   SRC=${2:?usage: fetch-models.sh --from <models-dir>}
-  rm -rf "$DEST" && mkdir -p "$DEST/usage/head"
+  rm -rf "$DEST" && mkdir -p "$DEST/usage/head" "$DEST/judges/casual" "$DEST/judges/publishable"
   for f in $FILES; do cp "$SRC/$f" "$DEST/$f"; done
   echo "local" > "$DEST/.version"
   echo "Copied models from $SRC"
