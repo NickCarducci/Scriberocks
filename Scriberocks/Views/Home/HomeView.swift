@@ -17,6 +17,10 @@ struct HomeView<Groups: View>: View {
     @State private var showGroups = false
     @State private var showProfile = false
     @State private var showLibrary = false
+    /// What the top-left button does on the rock (stop typing, back to the
+    /// latest version); nil = it opens Groups.
+    @State private var back: RockEditorViewModel.Back?
+    @State private var backRequests = 0
     private let groups: () -> Groups
 
     init(store: RockStore, @ViewBuilder groups: @escaping () -> Groups) {
@@ -48,7 +52,9 @@ struct HomeView<Groups: View>: View {
                                let target = i + delta
                                if rocks.indices.contains(target) { rockID = rocks[target].id }
                            },
-                           onOpenRock: { rockID = $0 })
+                           onOpenRock: { rockID = $0 },
+                           backRequests: backRequests,
+                           onBackChange: { back = $0 })
                     .id(rock.id)
                     .transition(.identity)
             }
@@ -82,7 +88,15 @@ struct HomeView<Groups: View>: View {
 
     private var topBar: some View {
         HStack {
-            ChromeButton(systemImage: "person.3.fill", label: "Groups") { showGroups = true }
+            if let back, !composing {
+                ChromeButton(systemImage: "chevron.backward", label: back == .stopEditing ? "Done editing" : "Back to the latest version") {
+                    backRequests += 1
+                }
+                .transition(.scale.combined(with: .opacity))
+            } else {
+                ChromeButton(systemImage: "person.3.fill", label: "Groups") { showGroups = true }
+                    .transition(.scale.combined(with: .opacity))
+            }
             Spacer()
             Button { showLibrary = true } label: {
                 HStack(spacing: 6) {
@@ -103,6 +117,7 @@ struct HomeView<Groups: View>: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        .animation(.snappy, value: back)
     }
 }
 

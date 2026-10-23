@@ -40,10 +40,14 @@ struct RockCanvas: View {
     /// -1: the newer rock; +1: the older rock.
     let onMove: (Int) -> Void
     let onOpenRock: (Rock.ID) -> Void
+    /// Bumped by the top-left back button; reports what it would do.
+    let backRequests: Int
+    let onBackChange: (RockEditorViewModel.Back?) -> Void
 
     init(rockID: Rock.ID, store: RockStore, previousRockText: String?, nextRockText: String?,
          onNewRock: @escaping () -> Void, onDeleted: @escaping () -> Void,
-         onMove: @escaping (Int) -> Void, onOpenRock: @escaping (Rock.ID) -> Void) {
+         onMove: @escaping (Int) -> Void, onOpenRock: @escaping (Rock.ID) -> Void,
+         backRequests: Int = 0, onBackChange: @escaping (RockEditorViewModel.Back?) -> Void = { _ in }) {
         _viewModel = StateObject(wrappedValue: RockEditorViewModel(rockID: rockID, store: store))
         self.previousRockText = previousRockText
         self.nextRockText = nextRockText
@@ -51,6 +55,8 @@ struct RockCanvas: View {
         self.onDeleted = onDeleted
         self.onMove = onMove
         self.onOpenRock = onOpenRock
+        self.backRequests = backRequests
+        self.onBackChange = onBackChange
     }
 
     var body: some View {
@@ -95,6 +101,7 @@ struct RockCanvas: View {
             let args = ProcessInfo.processInfo.arguments
             if args.contains("-openScriberocks") { showScriberocks = true }
             if args.contains("-openActions") { showActions = true }
+            if args.contains("-olderRevision"), viewModel.canGoBack { viewModel.goBack() }
             if let i = args.firstIndex(of: "-previewOption"), i + 1 < args.count, let n = Int(args[i + 1]), !variants.isEmpty {
                 viewModel.selectOption(n, count: variants.count)
             }
@@ -119,7 +126,15 @@ struct RockCanvas: View {
                 strikeRange(text, top: 0).map { String(text[$0]) } ?? text
             })
         }
-        .onDisappear(perform: viewModel.commit)
+        .onChange(of: back, initial: true) { _, new in onBackChange(new) }
+        .onChange(of: backRequests) {
+            switch back {
+            case .stopEditing: isEditing = false; isTyping = false
+            case .latest: withAnimation(.snappy) { viewModel.showLatest() }
+            case nil: break
+            }
+        }
+        .onDisappear { onBackChange(nil); viewModel.commit() }
         .onChange(of: edges) { _, new in lock.moved(atTop: new.top, atBottom: new.bottom) }
         .onChange(of: viewModel.optionIndex) {
             // The page turned to keeps the strike box's place in view.
@@ -141,6 +156,10 @@ struct RockCanvas: View {
                 isTyping = false
             }
         }
+    }
+
+    private var back: RockEditorViewModel.Back? {
+        RockEditorViewModel.back(isTyping: isTyping, isViewingOlderRevision: viewModel.isViewingOlderRevision)
     }
 
     private var prefetchKey: String {

@@ -110,6 +110,15 @@ final class RockEditorViewModel: ObservableObject {
     /// Showing an older revision (pulled down in history).
     var isViewingOlderRevision: Bool { canGoForward }
 
+    /// What the top-left button does instead of opening Groups: stop
+    /// typing, or return to the latest version. nil = it opens Groups.
+    enum Back: Equatable { case stopEditing, latest }
+
+    static func back(isTyping: Bool, isViewingOlderRevision: Bool) -> Back? {
+        if isTyping { return .stopEditing }
+        return isViewingOlderRevision ? .latest : nil
+    }
+
     /// Starts a new rock from `text` (acting on an older revision) and returns
     /// the original to its latest revision, untouched.
     func branch(to text: String) -> Rock.ID? {

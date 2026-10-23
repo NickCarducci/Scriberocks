@@ -702,3 +702,12 @@ struct InlineDiffParagraphTests {
         #expect(InlineDiff.joined(InlineDiff.tokens(old)) == old)
     }
 }
+
+struct TopBackButtonTests {
+    @Test func groupsUnlessEditingOrOnAnOlderVersion() {
+        #expect(RockEditorViewModel.back(isTyping: false, isViewingOlderRevision: false) == nil)
+        #expect(RockEditorViewModel.back(isTyping: true, isViewingOlderRevision: false) == .stopEditing)
+        #expect(RockEditorViewModel.back(isTyping: true, isViewingOlderRevision: true) == .stopEditing)
+        #expect(RockEditorViewModel.back(isTyping: false, isViewingOlderRevision: true) == .latest)
+    }
+}
