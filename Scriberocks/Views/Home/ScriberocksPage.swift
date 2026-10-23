@@ -38,6 +38,27 @@ struct ScriberocksPage: View {
                     }
                 }
 
+                Section {
+                    ForEach(Array(Self.pipeline.enumerated()), id: \.offset) { i, stage in
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                            Text(stage.optional ? "+" : "\(i + 1)")
+                                .font(.headline.monospacedDigit())
+                                .foregroundStyle(.tint)
+                                .frame(width: 18)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(stage.title).font(.headline)
+                                Text(stage.detail).font(.subheadline).foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                        .accessibilityElement(children: .combine)
+                    }
+                } header: {
+                    Text("How it works")
+                } footer: {
+                    Text("ScribeSLM is the language pipeline inside Scriberocks. All of it runs on your iPhone.")
+                }
+
                 Section("What's new") {
                     ForEach(Self.announcements, id: \.title) { note in
                         VStack(alignment: .leading, spacing: 4) {
@@ -83,12 +104,26 @@ struct ScriberocksPage: View {
                   detail: "Suggestions are made on the phone. Your writing isn't sent anywhere to get them."),
         Advantage(symbol: "infinity", title: "Buy once, yours forever",
                   detail: "No subscription."),
-        Advantage(symbol: "book.closed", title: "Learned from standards, not volume",
-                  detail: "Dictionaries, carefully annotated text and learners' writing, all open and credited."),
         Advantage(symbol: "textformat", title: "Your prose style",
                   detail: "Casual for everyday writing, publishable for published prose. Choose in Profile."),
         Advantage(symbol: "clock.arrow.circlepath", title: "Every version kept",
                   detail: "Pull through a rock's history, and branch from any older version."),
+    ]
+
+    /// ScribeSLM's four stages, then ScribeIE (Intent-conditioned Editing), the optional fifth.
+    struct Stage { let title, detail: String; var optional = false }
+    static let pipeline: [Stage] = [
+        Stage(title: "Standards, not volume",
+              detail: "Its models learned from dictionaries, hand-annotated text and learners' writing, not text scraped in bulk. Every source is open and credited."),
+        Stage(title: "Dictionary and usage",
+              detail: "Your rock is split into sentences, and each word is tagged and parsed, using a dictionary and a model of how words are actually used."),
+        Stage(title: "Dual meanings and synonyms",
+              detail: "Words with more than one meaning get the meaning they have in your sentence, and only that meaning's synonyms are considered."),
+        Stage(title: "Proposing and judging",
+              detail: "Trims, cuts, joins, reorders and word swaps are proposed, then judged by the model for your prose style. Only the ones that fit are shown."),
+        Stage(title: "ScribeIE (coming)",
+              detail: "Optional: re-ranks suggestions by the intent you choose, clarity first, learned from editors' revisions. The Generate switch appears when it's available.",
+              optional: true),
     ]
 
     struct Announcement { let title: String; let date: Date; let detail: String }
