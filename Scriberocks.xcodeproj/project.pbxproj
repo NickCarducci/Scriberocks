@@ -217,6 +217,12 @@
 				"$(SRCROOT)/Models/judges/publishable/config.json",
 				"$(SRCROOT)/Models/judges/publishable/vocab.txt",
 				"$(SRCROOT)/Models/judges/publishable/model.q8.safetensors",
+				"$(SRCROOT)/Models/scribe-ie/casual/encoder/config.json",
+				"$(SRCROOT)/Models/scribe-ie/casual/encoder/vocab.txt",
+				"$(SRCROOT)/Models/scribe-ie/casual/encoder/model.q8.safetensors",
+				"$(SRCROOT)/Models/scribe-ie/casual/tagger.json",
+				"$(SRCROOT)/Models/scribe-ie/casual/tagger.safetensors",
+				"$(SRCROOT)/Models/scribe-ie/casual/confidence.txt",
 			);
 			name = "Bundle language models";
 			outputFileListPaths = (
@@ -239,10 +245,16 @@
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/judges/publishable/config.json",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/judges/publishable/vocab.txt",
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/judges/publishable/model.q8.safetensors",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/scribe-ie/casual/encoder/config.json",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/scribe-ie/casual/encoder/vocab.txt",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/scribe-ie/casual/encoder/model.q8.safetensors",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/scribe-ie/casual/tagger.json",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/scribe-ie/casual/tagger.safetensors",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Models/scribe-ie/casual/confidence.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\nsrc=\"$SRCROOT/Models\"\ndst=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Models\"\nmissing=\"\"\nfor f in lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json judges/casual/config.json judges/casual/vocab.txt judges/casual/model.q8.safetensors judges/publishable/config.json judges/publishable/vocab.txt judges/publishable/model.q8.safetensors; do\n  [ -f \"$src/$f\" ] || missing=\"$missing $f\"\ndone\nif [ -n \"$missing\" ]; then\n  msg=\"language models missing from Models/ ($missing) - run scripts/fetch-models.sh (or --from ../../core/models)\"\n  if [ \"$CONFIGURATION\" = \"Release\" ]; then echo \"error: $msg\"; exit 1; fi\n  echo \"warning: $msg - suggestions will be unavailable in this build\"\n  exit 0\nfi\nmkdir -p \"$dst/usage/head\" \"$dst/judges/casual\" \"$dst/judges/publishable\"\nfor f in lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json judges/casual/config.json judges/casual/vocab.txt judges/casual/model.q8.safetensors judges/publishable/config.json judges/publishable/vocab.txt judges/publishable/model.q8.safetensors; do cp \"$src/$f\" \"$dst/$f\"; done\n";
+			shellScript = "set -e\nsrc=\"$SRCROOT/Models\"\ndst=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Models\"\nmissing=\"\"\nfor f in lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json judges/casual/config.json judges/casual/vocab.txt judges/casual/model.q8.safetensors judges/publishable/config.json judges/publishable/vocab.txt judges/publishable/model.q8.safetensors scribe-ie/casual/encoder/config.json scribe-ie/casual/encoder/vocab.txt scribe-ie/casual/encoder/model.q8.safetensors scribe-ie/casual/tagger.json scribe-ie/casual/tagger.safetensors scribe-ie/casual/confidence.txt; do\n  [ -f \"$src/$f\" ] || missing=\"$missing $f\"\ndone\nif [ -n \"$missing\" ]; then\n  msg=\"language models missing from Models/ ($missing) - run scripts/fetch-models.sh (or --from ../../core/models)\"\n  if [ \"$CONFIGURATION\" = \"Release\" ]; then echo \"error: $msg\"; exit 1; fi\n  echo \"warning: $msg - suggestions will be unavailable in this build\"\n  exit 0\nfi\nmkdir -p \"$dst/usage/head\" \"$dst/judges/casual\" \"$dst/judges/publishable\" \"$dst/scribe-ie/casual/encoder\"\nfor f in lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json judges/casual/config.json judges/casual/vocab.txt judges/casual/model.q8.safetensors judges/publishable/config.json judges/publishable/vocab.txt judges/publishable/model.q8.safetensors scribe-ie/casual/encoder/config.json scribe-ie/casual/encoder/vocab.txt scribe-ie/casual/encoder/model.q8.safetensors scribe-ie/casual/tagger.json scribe-ie/casual/tagger.safetensors scribe-ie/casual/confidence.txt; do cp \"$src/$f\" \"$dst/$f\"; done\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

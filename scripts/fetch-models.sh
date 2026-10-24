@@ -5,11 +5,11 @@
 set -eu
 cd "$(dirname "$0")/.."
 DEST=Models
-FILES="lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json judges/casual/config.json judges/casual/vocab.txt judges/casual/model.q8.safetensors judges/publishable/config.json judges/publishable/vocab.txt judges/publishable/model.q8.safetensors"
+FILES="lexicon.bin tagger.bin xpos.bin parser.bin inflect.bin lm.bin usage/usage.safetensors usage/usage.json usage/senses.bin usage/head/senses.safetensors usage/head/senses.json judges/casual/config.json judges/casual/vocab.txt judges/casual/model.q8.safetensors judges/publishable/config.json judges/publishable/vocab.txt judges/publishable/model.q8.safetensors scribe-ie/casual/encoder/config.json scribe-ie/casual/encoder/vocab.txt scribe-ie/casual/encoder/model.q8.safetensors scribe-ie/casual/tagger.json scribe-ie/casual/tagger.safetensors scribe-ie/casual/confidence.txt"
 
 if [ "${1:-}" = "--from" ]; then
   SRC=${2:?usage: fetch-models.sh --from <models-dir>}
-  rm -rf "$DEST" && mkdir -p "$DEST/usage/head" "$DEST/judges/casual" "$DEST/judges/publishable"
+  rm -rf "$DEST" && mkdir -p "$DEST/usage/head" "$DEST/judges/casual" "$DEST/judges/publishable" "$DEST/scribe-ie/casual/encoder"
   for f in $FILES; do cp "$SRC/$f" "$DEST/$f"; done
   echo "local" > "$DEST/.version"
   echo "Copied models from $SRC"

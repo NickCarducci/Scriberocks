@@ -146,16 +146,24 @@ struct ProfileView: View {
                     }
                 }
             }
-            if suggestions.generateAvailable {
+            if suggestions.options.canGenerate(generateStyles: suggestions.generateStyles) {
                 Toggle("Generate", isOn: $suggestions.options.generate)
             }
         } header: {
             Text("Writing")
         } footer: {
-            Text(suggestions.availableStyles.isEmpty
-                 ? "Variety trades safer word swaps for more of them."
-                 : "Casual knows everyday writing; publishable knows published prose. Variety trades safer word swaps for more of them.")
+            Text(writingFooter)
         }
+    }
+
+    private var writingFooter: String {
+        var parts: [String] = []
+        if !suggestions.availableStyles.isEmpty { parts.append("Casual knows everyday writing; publishable knows published prose.") }
+        parts.append("Variety trades safer word swaps for more of them.")
+        if !suggestions.generateStyles.isEmpty {
+            parts.append("Generate (\(suggestions.generateStyles.map(\.capitalized).joined(separator: ", "))): ScribeIE puts the suggestions editors would make first, and writes its own version of each, underlined in red.")
+        }
+        return parts.joined(separator: " ")
     }
 
     private var journalSection: some View {

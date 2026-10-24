@@ -19,8 +19,9 @@ final class SuggestionEngine: ObservableObject {
     @Published private(set) var cacheVersion = 0
     /// Prose styles whose judges are bundled ("casual", "publishable"); the app offers only these.
     @Published private(set) var availableStyles: [String] = []
-    /// Whether a ScribeIE (Intent-conditioned Editing) model is bundled; Generate shows only then.
-    @Published private(set) var generateAvailable = false
+    /// Prose styles with a bundled ScribeIE (Intent-conditioned Editing):
+    /// Generate shows when the writer's style is one of these.
+    @Published private(set) var generateStyles: [String] = []
     /// The writer's options; changing them re-runs suggestions.
     @Published var options: SuggestionOptions {
         didSet {
@@ -57,7 +58,7 @@ final class SuggestionEngine: ObservableObject {
             case .success(let engine):
                 self.engine = engine
                 self.availableStyles = engine.availableStyles()
-                self.generateAvailable = engine.generateAvailable()
+                self.generateStyles = engine.generateStyles()
                 self.applyOptions()
                 self.state = .ready
             case .failure(let error):
@@ -71,7 +72,7 @@ final class SuggestionEngine: ObservableObject {
     /// suggestions are keyed by options, so switching back is instant.
     private func applyOptions() {
         guard let engine else { return }
-        let effective = options.effective(availableStyles: availableStyles, generateAvailable: generateAvailable)
+        let effective = options.effective(availableStyles: availableStyles, generateStyles: generateStyles)
         _ = engine.setStyle(name: effective.style)
         engine.setVariety(value: Float(effective.variety))
         engine.setGenerate(enabled: effective.generate)
@@ -80,7 +81,7 @@ final class SuggestionEngine: ObservableObject {
     }
 
     private func key(_ text: String) -> String {
-        options.effective(availableStyles: availableStyles, generateAvailable: generateAvailable).cacheKey(text)
+        options.effective(availableStyles: availableStyles, generateStyles: generateStyles).cacheKey(text)
     }
 
     /// Other cuts of `text`, best first. Empty until the engine is ready.
@@ -157,12 +158,17 @@ struct SuggestionOptions: Equatable {
     }
 
     /// What the engine can serve: a style whose judge isn't bundled falls back
-    /// to the default, Generate stays off without a ScribeIE model, variety is clamped.
-    func effective(availableStyles: [String], generateAvailable: Bool) -> SuggestionOptions {
-        SuggestionOptions(style: availableStyles.contains(style) ? style : "",
-                          variety: min(max(variety, 0), 1),
-                          generate: generate && generateAvailable)
+    /// to the default, Generate works only in a style with its own ScribeIE,
+    /// variety is clamped.
+    func effective(availableStyles: [String], generateStyles: [String]) -> SuggestionOptions {
+        let style = availableStyles.contains(style) ? style : ""
+        return SuggestionOptions(style: style,
+                                 variety: min(max(variety, 0), 1),
+                                 generate: generate && generateStyles.contains(style))
     }
+
+    /// Whether the Generate switch applies to this style.
+    func canGenerate(generateStyles: [String]) -> Bool { generateStyles.contains(style) }
 
     func cacheKey(_ text: String) -> String {
         "\(style)|\(Int((variety * 100).rounded()))|\(generate)|\(text)"

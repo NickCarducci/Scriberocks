@@ -121,13 +121,15 @@ struct ScriberocksPage: View {
               detail: "Words with more than one meaning get the meaning they have in your sentence, and only that meaning's synonyms are considered."),
         Stage(title: "Proposing and judging",
               detail: "Trims, cuts, joins, reorders and word swaps are proposed, then judged by the model for your prose style. Only the ones that fit are shown."),
-        Stage(title: "ScribeIE (coming)",
-              detail: "Optional: re-ranks suggestions by the intent you choose, clarity first, learned from editors' revisions. The Generate switch appears when it's available.",
+        Stage(title: "ScribeIE: Generate",
+              detail: "Optional, for casual writing. It puts first the suggestions editors would make, and writes its own version of each, underlined in red. Learned from 400,000 edits by Simple English Wikipedia's editors; the casual model checks every word it writes, and it never removes a negation, number or name.",
               optional: true),
     ]
 
     struct Announcement { let title: String; let date: Date; let detail: String }
     static let announcements: [Announcement] = [
+        Announcement(title: "Generate", date: day(2026, 10, 24),
+                     detail: "ScribeIE is here for casual writing: turn on Generate in Profile › Writing. Suggestions are ordered by what editors would do, and each gets a version written by ScribeIE, underlined in red."),
         Announcement(title: "Long rocks", date: day(2026, 10, 23),
                      detail: "Write as much as you like and scroll. Suggestions cover the sentences in the highlighted box at the top."),
         Announcement(title: "Casual and publishable", date: day(2026, 10, 23),

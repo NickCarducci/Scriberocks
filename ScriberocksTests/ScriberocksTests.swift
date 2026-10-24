@@ -595,8 +595,12 @@ struct SuggestionOptionsTests {
 
     @Test func onlyWhatTheEngineCanServe() {
         let o = SuggestionOptions(style: "publishable", variety: 1.4, generate: true)
-        #expect(o.effective(availableStyles: ["casual"], generateAvailable: false) == SuggestionOptions(style: "", variety: 1, generate: false))
-        #expect(o.effective(availableStyles: ["casual", "publishable"], generateAvailable: true) == SuggestionOptions(style: "publishable", variety: 1, generate: true))
+        #expect(o.effective(availableStyles: ["casual"], generateStyles: []) == SuggestionOptions(style: "", variety: 1, generate: false))
+        #expect(o.effective(availableStyles: ["casual", "publishable"], generateStyles: ["casual"]) == SuggestionOptions(style: "publishable", variety: 1, generate: false),
+                "no ScribeIE for publishable yet")
+        let casual = SuggestionOptions(style: "casual", variety: 0.5, generate: true)
+        #expect(casual.effective(availableStyles: ["casual", "publishable"], generateStyles: ["casual"]) == casual)
+        #expect(casual.canGenerate(generateStyles: ["casual"]) && !o.canGenerate(generateStyles: ["casual"]))
     }
 
     @Test func cacheSeparatesOptions() {
@@ -612,10 +616,14 @@ struct SuggestionOptionsTests {
         for style in ["casual", "publishable"] {
             #expect(FileManager.default.fileExists(atPath: models.appending(path: "judges/\(style)/model.q8.safetensors").path()))
         }
+        for file in ["encoder/model.q8.safetensors", "tagger.safetensors", "tagger.json"] {
+            #expect(FileManager.default.fileExists(atPath: models.appending(path: "scribe-ie/casual/\(file)").path()), "ScribeIE \(file) is bundled")
+        }
         let engine = SuggestionEngine(modelsURL: models, defaults: defaults())
         for _ in 0..<600 where !engine.state.isReady { try await Task.sleep(for: .milliseconds(100)) }
         #expect(engine.state.isReady)
         #expect(Set(engine.availableStyles) == ["casual", "publishable"])
+        #expect(engine.generateStyles == ["casual"], "ScribeIE is bundled for casual")
         engine.options.style = "casual"
         #expect(!engine.variants(for: "I want to come to the party but I have to work late").isEmpty)
     }
