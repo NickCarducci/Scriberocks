@@ -636,6 +636,20 @@ struct StrikeBoxTests {
         #expect(StrikeBox.struck(extents, box: 200...276) == nil)
     }
 
+    @Test func theBoxSlidesFromTopToBottomWithTheScroll() {
+        let visible: CGFloat = 600
+        #expect(StrikeBox.slide(offset: 0, maxOffset: 400, visible: visible) == 0)
+        #expect(StrikeBox.slide(offset: 400, maxOffset: 400, visible: visible) == visible - StrikeBox.height)
+        #expect(StrikeBox.slide(offset: 200, maxOffset: 400, visible: visible) == (visible - StrikeBox.height) / 2)
+        #expect(StrikeBox.slide(offset: 0, maxOffset: 0, visible: visible) == 0, "text that doesn't scroll")
+    }
+
+    @Test @MainActor func rocksThatFitOnScreenAreScoredWhole() {
+        let text = (1...8).map { "Sentence number \($0) is here." }.joined(separator: " ")
+        #expect(StrikeBox.range(in: text, top: 0, width: 300, font: .systemFont(ofSize: 20), fits: 600) == nil)
+        #expect(StrikeBox.range(in: text, top: 0, width: 300, font: .systemFont(ofSize: 20), fits: 60) != nil)
+    }
+
     @Test @MainActor func shortRocksAreScoredWhole() {
         let font = UIFont.systemFont(ofSize: 20)
         #expect(StrikeBox.range(in: "Just one sentence here.", top: 0, width: 300, font: font) == nil)
@@ -645,10 +659,10 @@ struct StrikeBoxTests {
     @Test @MainActor func longRocksStrikeOnlyWhatIsInTheBox() throws {
         let text = (1...30).map { "Sentence number \($0) runs on for a little while." }.joined(separator: " ")
         let font = UIFont.systemFont(ofSize: 20)
-        let top = try #require(StrikeBox.range(in: text, top: 0, width: 300, font: font))
+        let top = try #require(StrikeBox.range(in: text, top: 0, width: 300, font: font, fits: 200))
         #expect(text[top].hasPrefix("Sentence number 1 "))
         #expect(!text[top].contains("number 30 "))
-        let lower = try #require(StrikeBox.range(in: text, top: 400, width: 300, font: font))
+        let lower = try #require(StrikeBox.range(in: text, top: 400, width: 300, font: font, fits: 200))
         #expect(!text[lower].hasPrefix("Sentence number 1 "))
         #expect(text[lower].hasSuffix("."))
     }

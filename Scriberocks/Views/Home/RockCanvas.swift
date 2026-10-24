@@ -24,12 +24,17 @@ struct RockCanvas: View {
     @State private var lock = PullLock()
     /// The edges when the current vertical drag latched.
     @State private var pullStart: Edges?
-    /// Long rocks: the strike box's top, in points down the text (set when
-    /// scrolling the current text settles); its width; its height.
+    /// Rocks too long for the screen: the strike box's top, in points down the
+    /// text, and below the top of the visible text (set when scrolling the
+    /// current text settles); the scroll offset then; the text's width and
+    /// height; the page's height.
     @State private var strikeTop: CGFloat = 0
+    @State private var strikeSlide: CGFloat = 0
+    @State private var scrollOffset: CGFloat = 0
     @State private var textWidth: CGFloat = 0
     @State private var textHeight: CGFloat = 0
-    /// The current page's scroll position; neighbors show the strike box's place.
+    @State private var viewportHeight: CGFloat = 0
+    /// The current page's scroll position; neighbors show the same place.
     @State private var pagePosition = ScrollPosition(y: 0)
     /// Text that would branch into a new rock, awaiting confirmation.
     @State private var pendingBranch: String?
@@ -137,11 +142,13 @@ struct RockCanvas: View {
         .onDisappear { onBackChange(nil); viewModel.commit() }
         .onChange(of: edges) { _, new in lock.moved(atTop: new.top, atBottom: new.bottom) }
         .onChange(of: viewModel.optionIndex) {
-            // The page turned to keeps the strike box's place in view.
-            pagePosition = ScrollPosition(y: strikeTop)
+            // The page turned to keeps the same place in view.
+            pagePosition = ScrollPosition(y: scrollOffset)
         }
         .onChange(of: viewModel.rock?.revisionIndex) {
             strikeTop = 0
+            strikeSlide = 0
+            scrollOffset = 0
             pagePosition = ScrollPosition(y: 0)
         }
         .onChange(of: isEditing) { _, editing in
@@ -176,11 +183,14 @@ struct RockCanvas: View {
 
     /// The struck sentences of `text` with the strike box at `top`; nil = all.
     private func strikeRange(_ text: String, top: CGFloat) -> Range<String.Index>? {
-        StrikeBox.range(in: text, top: top, width: textWidth, font: Self.pageFont)
+        StrikeBox.range(in: text, top: top, width: textWidth, font: Self.pageFont, fits: visibleTextHeight)
     }
 
-    /// Taller than the strike box: the box shows and only what it strikes is scored.
-    private var isLong: Bool { textHeight > StrikeBox.height + 1 }
+    /// The text's height that fits on the page (less its padding).
+    private var visibleTextHeight: CGFloat { viewportHeight > 0 ? viewportHeight - 16 : .infinity }
+
+    /// Too tall for the page: it scrolls, the box shows, and only what it strikes is scored.
+    private var isLong: Bool { textHeight > visibleTextHeight + 1 }
 
     /// "Current" or "Option 2 of 14 · cut", or the engine's state.
     @ViewBuilder
@@ -463,12 +473,17 @@ struct RockCanvas: View {
                 .padding(.horizontal, 5)
                 .padding(.vertical, 8)
         }
-        // Long rocks scroll far enough for the last sentence to reach the box.
-        .contentMargins(.bottom, isLong ? max(0, viewport - StrikeBox.height - 16) : 0, for: .scrollContent)
-        .scrollPosition(isCurrent ? $pagePosition : .constant(ScrollPosition(y: strikeTop)))
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { if isText { viewportHeight = $0 } }
+        .scrollPosition(isCurrent ? $pagePosition : .constant(ScrollPosition(y: scrollOffset)))
         .onScrollPhaseChange { _, phase, context in
             if isText, isCurrent, phase == .idle {
-                strikeTop = max(0, context.geometry.contentOffset.y + context.geometry.contentInsets.top)
+                let g = context.geometry
+                let offset = max(0, g.contentOffset.y + g.contentInsets.top)
+                let maxOffset = g.contentSize.height + g.contentInsets.top + g.contentInsets.bottom - g.containerSize.height
+                let slide = StrikeBox.slide(offset: offset, maxOffset: maxOffset, visible: visibleTextHeight)
+                scrollOffset = offset
+                strikeSlide = slide
+                strikeTop = offset + slide
             }
         }
         .overlay(alignment: .top) {
@@ -477,7 +492,7 @@ struct RockCanvas: View {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(Color.accentColor.opacity(0.08))
                     .frame(height: StrikeBox.height)
-                    .padding(.top, 8)
+                    .padding(.top, 8 + strikeSlide)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }

@@ -1,10 +1,13 @@
 import UIKit
 import ScribeCore
 
-/// Long rocks scroll; only the sentences in the strike box are scored. The box
-/// is a band at the top of the text, four lines of 16-point type tall. Every
-/// sentence with any part inside it is struck, however many that is; the
-/// rest of the rock is left exactly as written (suggestions are spliced in).
+/// Rocks too long to fit on screen scroll; only the sentences in the strike
+/// box are scored. The box is a band four lines of 16-point type tall that
+/// slides with the scroll (top of the screen at the start of the text, bottom
+/// of the screen at the end), so every sentence can reach it without extra
+/// scrolling room. Every sentence with any part inside it is struck, however
+/// many that is; the rest of the rock is left exactly as written
+/// (suggestions are spliced in). Rocks that fit on screen are scored whole.
 enum StrikeBox {
     static let height: CGFloat = 4 * UIFont.systemFont(ofSize: 16).lineHeight
 
@@ -37,17 +40,26 @@ enum StrikeBox {
         return out
     }
 
+    /// Where the box sits below the top of the visible text: 0 scrolled to the
+    /// start, the whole `visible` height less the box at the end, in between
+    /// in proportion.
+    static func slide(offset: CGFloat, maxOffset: CGFloat, visible: CGFloat) -> CGFloat {
+        guard maxOffset > 0 else { return 0 }
+        return max(0, visible - height) * min(1, max(0, offset / maxOffset))
+    }
+
     /// The struck stretch of `text` (first struck sentence through the last)
     /// with the box `top` points down the laid-out text, or nil when every
-    /// sentence is struck (score the whole rock).
+    /// sentence is struck or the text fits in `fits` points (score the whole rock).
     @MainActor
-    static func range(in text: String, top: CGFloat, width: CGFloat, font: UIFont) -> Range<String.Index>? {
+    static func range(in text: String, top: CGFloat, width: CGFloat, font: UIFont, fits: CGFloat = .infinity) -> Range<String.Index>? {
         let sentences = sentences(in: text)
         guard sentences.count > 1, width > 0 else { return nil }
         let key = "\(width)|\(text)"
         let extents = cache[key] ?? extents(of: sentences, in: text, width: width, font: font)
         if cache.count > 32 { cache.removeAll() }
         cache[key] = extents
+        if (extents.last?.upperBound ?? 0) <= fits { return nil }
         let box = top...(top + height)
         // A box in a gap (between paragraphs) strikes the nearest sentence.
         let hit = struck(extents, box: box) ?? {
