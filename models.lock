@@ -1,5 +1,5 @@
 # Language models bundled into the app. scripts/fetch-models.sh downloads
 # and verifies these; Xcode Cloud runs it from ci_scripts/ci_post_clone.sh.
-VERSION=v0.1.6
-URL=https://github.com/NickCarducci/scriberocks-backend/releases/download/v0.1.6/scribe-models.zip
-SHA256=e1467cd4e4c9b73ff9178c23276f8c3f37ccea2eea335426b8405e7fe257d53b
+VERSION=v0.1.7
+URL=https://github.com/NickCarducci/scriberocks-backend/releases/download/v0.1.7/scribe-models.zip
+SHA256=515c3ad0cc8ad179829321dccdc1e14866c9fc80f0e58dd07267f08d13a5b091

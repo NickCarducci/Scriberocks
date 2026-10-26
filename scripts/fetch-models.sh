@@ -33,6 +33,9 @@ if [ "$ACTUAL" != "$SHA256" ]; then
 fi
 rm -rf "$DEST" && mkdir -p "$DEST"
 unzip -q "$TMP/models.zip" -d "$DEST"
+# Older release archives may contain experimental context models; the iOS
+# release intentionally ships only the Usage model and style judges.
+rm -rf "$DEST/context"
 for f in $FILES; do
   [ -f "$DEST/$f" ] || { echo "error: $f missing from models.zip" >&2; exit 1; }
 done
